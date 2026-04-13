@@ -1,0 +1,348 @@
+You are an expert full-stack AI engineer. Build a complete, production-ready SaaS web application based on the following system.
+
+This is NOT a demo. This must function as a real product.
+
+---
+
+🧠 APP IDENTITY
+
+App Name:
+
+ContractAI
+
+Tagline:
+
+“Your contract analyzer in your pocket — without paying expensive lawyers.”
+
+Purpose:
+
+This app allows users to upload legal contracts (PDFs), instantly analyze them using AI, and receive:
+
+- Clear summaries
+- Risk detection
+- Important clauses
+
+It is designed as a low-cost alternative to hiring a lawyer, making contract understanding accessible to anyone.
+
+---
+
+🔐 CORE ARCHITECTURE
+
+Frontend:
+
+- React (modern UI)
+- Mobile-first responsive design
+- Clean SaaS interface (cards, spacing, hierarchy)
+
+Backend:
+
+- Node.js + Express
+- ALL logic handled in backend
+- Frontend must NEVER call external APIs directly
+
+Database & Auth:
+
+- Supabase (authentication + database)
+
+AI:
+
+- GROQ API
+
+OCR:
+
+- External OCR API
+
+Payments:
+
+- Dodo Payments (Merchant of Record)
+
+Email:
+
+- SendGrid
+
+Vector DB:
+
+- Pinecone
+
+---
+
+🔑 ENVIRONMENT VARIABLES (MANDATORY)
+
+Use these EXACT variables:
+
+SESSION_SECRET=
+GROQ_API_KEY=
+OCR_API_KEY=
+SENDGRID_API_KEY=
+PINECONE_API_KEY=
+SUPPORT_EMAIL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_ANON_KEY=
+SUPABASE_URL=
+DODO_API_KEY=
+DODO_WEBHOOK_SECRET=
+DODO_PRO_PLAN_ID=
+DODO_PREMIUM_PLAN_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_CLIENT_EMAIL=
+
+🚨 NEVER hardcode any keys in the code.
+
+---
+
+🔒 PRIVACY & DEPLOYMENT RULES (STRICT)
+
+🚫 MUST NOT:
+
+- Use user's email
+- Use Replit account name
+- Expose identity in:
+  - URL
+  - subdomain
+  - metadata
+  - project name
+
+✅ MUST:
+
+- Generate neutral deployment name (e.g. contract-ai-app)
+- Sanitize all metadata
+- Override any auto-generated names that include personal identity
+
+---
+
+🎨 UI / UX REQUIREMENTS
+
+- Professional SaaS design (like Stripe / Notion)
+- Card-based layout
+- Smooth spacing and hierarchy
+- Clean typography
+- Mobile responsive
+
+🚨 CRITICAL RULE:
+👉 EVERY BUTTON MUST DO SOMETHING REAL
+
+No fake buttons. No placeholders.
+
+---
+
+🧭 USER FLOW
+
+1. Landing page (explains product clearly)
+2. Plan selection (Free / Pro / Premium)
+3. Authentication (Supabase + Google)
+4. Dashboard
+5. Upload contract
+6. Analyze contract
+7. View structured results
+8. Upgrade plan (if needed)
+9. AI Chat (premium feature)
+
+---
+
+📄 FILE UPLOAD SYSTEM (CRITICAL FAILURE FIX)
+
+Known Issue:
+
+On mobile, file disappears after returning from file picker.
+
+Cause:
+
+Browser suspension → lost input connection → onChange fails
+
+---
+
+REQUIRED FIX (MANDATORY):
+
+- Use React useRef to anchor file input (like a nail in memory)
+- Store selected file immediately in state
+- Validate:
+  - Only PDF allowed
+  - Max file size (e.g. 10MB)
+
+Behavior:
+
+- File MUST persist after returning from file picker
+- Analyze button activates ONLY when file exists
+
+---
+
+📄 OCR SYSTEM
+
+Backend Flow:
+
+1. Receive file via FormData
+2. Send to OCR API
+3. Extract text
+4. Return clean text
+
+MUST INCLUDE:
+
+- Error handling
+- Retry logic
+- Logging system
+- File size limits
+
+---
+
+🤖 AI ANALYSIS SYSTEM (STRICT)
+
+OUTPUT MUST ALWAYS BE:
+
+{
+"summary": "...",
+"risks": ["...", "..."],
+"key_clauses": ["...", "..."]
+}
+
+RULES:
+
+- No free-text responses
+- Must be structured JSON
+- Must handle long documents
+- Backend parses and sends clean response to frontend
+
+---
+
+💳 PAYMENT SYSTEM — DODO (CRITICAL FAILURE FIX)
+
+🚨 KNOWN FAILURE:
+
+422 Error due to missing billing data
+
+---
+
+REQUIRED IMPLEMENTATION:
+
+1. GEO-IP DETECTION
+
+- Detect user IP
+- Extract country (ISO code)
+
+2. BILLING OBJECT (MANDATORY)
+
+{
+"billing": {
+"country": "UG",
+"state": "",
+"city": "",
+"street": "",
+"zip": ""
+}
+}
+
+---
+
+3. PRODUCT SECURITY
+
+Backend MUST map:
+
+- Pro → DODO_PRO_PLAN_ID
+- Premium → DODO_PREMIUM_PLAN_ID
+
+Frontend must NEVER send product IDs directly.
+
+---
+
+4. CHECKOUT RESPONSE CONTRACT
+
+Backend returns:
+
+{
+"success": true,
+"checkout_url": "https://..."
+}
+
+Frontend MUST:
+👉 Redirect immediately to checkout_url
+
+---
+
+🔁 FRONTEND CHECKOUT FAILURE FIX
+
+Known Issue:
+
+Frontend expected success message instead of URL
+
+FIX:
+
+- Handle checkout_url properly
+- Redirect user instantly
+
+---
+
+🔐 PLAN SYSTEM
+
+Plans:
+
+- Free
+- Pro
+- Premium
+
+MUST:
+
+- Enforce on backend
+- Restrict features properly
+- Prevent abuse
+
+---
+
+🤖 AI CHAT FEATURE
+
+- ChatGPT-style UI
+- Context-aware (based on contract)
+- Premium-only feature
+
+---
+
+⚡ SYSTEM SAFETY
+
+MUST INCLUDE:
+
+- Logging (OCR, AI, payments)
+- Rate limiting (prevent spam/abuse)
+- Error handling across all endpoints
+
+---
+
+🧱 ARCHITECTURE RULES
+
+- Frontend NEVER calls external APIs
+- Backend handles ALL integrations
+- Modular structure
+- Clean separation
+
+---
+
+🎯 UI POLISH
+
+- Loading states for all actions
+- Empty states handled
+- Smooth animations
+- Professional dashboard layout
+
+---
+
+📌 FOOTER (MANDATORY)
+
+Display at bottom of app:
+
+"© 2026 ContractAI. All rights reserved."
+
+---
+
+🚀 FINAL INSTRUCTION
+
+Build this as a COMPLETE working SaaS product.
+
+EVERYTHING must work:
+
+Upload → OCR → AI → Results → Payment → Upgrade → Chat
+
+🚫 DO NOT:
+
+- Skip features
+- Use placeholders
+- Leave broken flows
+
+This is a real product for real users.
