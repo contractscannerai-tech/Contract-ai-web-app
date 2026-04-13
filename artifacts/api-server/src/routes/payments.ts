@@ -12,6 +12,10 @@ const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"];
 const DODO_PRO_PLAN_ID = process.env["DODO_PRO_PLAN_ID"];
 const DODO_PREMIUM_PLAN_ID = process.env["DODO_PREMIUM_PLAN_ID"];
 
+function structuredError(source: string, message: string, details: string) {
+  return { error: true, message, details, source };
+}
+
 async function getCountryFromIp(ip: string): Promise<string> {
   try {
     if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("10.") || ip.startsWith("192.168.")) {
@@ -30,18 +34,30 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
   const { plan } = req.body as { plan?: string };
 
   if (!plan || !["pro", "premium"].includes(plan)) {
-    res.status(400).json({ error: "BadRequest", message: "Invalid plan. Must be 'pro' or 'premium'" });
+    res.status(400).json(structuredError("PAYMENT", "Invalid plan specified", `Received plan=${plan ?? "undefined"}, must be 'pro' or 'premium'`));
     return;
   }
 
   if (!DODO_API_KEY) {
-    res.status(500).json({ error: "ConfigError", message: "Payment service not configured" });
+    req.log.error({
+      error: true,
+      source: "PAYMENT",
+      message: "Dodo Payments API key not configured",
+      details: "DODO_API_KEY environment variable is missing",
+    }, "Checkout: DODO_API_KEY missing");
+    res.status(500).json(structuredError("PAYMENT", "Payment service is not configured", "DODO_API_KEY is missing from environment"));
     return;
   }
 
   const productId = plan === "pro" ? DODO_PRO_PLAN_ID : DODO_PREMIUM_PLAN_ID;
   if (!productId) {
-    res.status(500).json({ error: "ConfigError", message: "Plan product ID not configured" });
+    req.log.error({
+      error: true,
+      source: "PAYMENT",
+      message: "Dodo product ID not configured for plan",
+      details: `Plan=${plan}, missing env var: ${plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID"}`,
+    }, "Checkout: product ID missing");
+    res.status(500).json(structuredError("PAYMENT", `Product ID for ${plan} plan is not configured`, `Missing ${plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID"}`));
     return;
   }
 
@@ -57,25 +73,14 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     const payload = {
       product_id: productId,
       quantity: 1,
-      customer: {
-        email: req.userEmail,
-      },
-      billing: {
-        country,
-        state: "",
-        city: "",
-        street: "",
-        zip: "",
-      },
+      customer: { email: req.userEmail },
+      billing: { country, state: "", city: "", street: "", zip: "" },
       success_url: `${baseUrl}/dashboard?upgraded=true`,
       cancel_url: `${baseUrl}/pricing?cancelled=true`,
-      metadata: {
-        userId: req.userId,
-        plan,
-      },
+      metadata: { userId: req.userId, plan },
     };
 
-    req.log.info({ plan, productId, country }, "Creating Dodo checkout");
+    req.log.info({ source: "PAYMENT", plan, productId, country, userId: req.userId }, "Checkout: creating Dodo subscription");
 
     const response = await fetch("https://api.dodopayments.com/subscriptions", {
       method: "POST",
@@ -87,9 +92,17 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      req.log.error({ status: response.status, errorText, plan }, "Dodo checkout failed");
-      res.status(502).json({ error: "PaymentError", message: "Payment service error. Please try again." });
+      const errorText = await response.text().catch(() => "(unreadable)");
+      req.log.error({
+        error: true,
+        source: "PAYMENT",
+        message: "Dodo Payments API returned non-2xx response",
+        details: `HTTP ${response.status}: ${errorText}`,
+        plan,
+        productId,
+        userId: req.userId,
+      }, "Checkout: Dodo API error");
+      res.status(502).json(structuredError("PAYMENT", "Payment gateway returned an error", `Dodo HTTP ${response.status}: ${errorText}`));
       return;
     }
 
@@ -97,16 +110,32 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     const checkoutUrl = data.payment_link ?? data.url ?? data.checkout_url;
 
     if (!checkoutUrl) {
-      req.log.error({ data }, "No checkout URL in Dodo response");
-      res.status(502).json({ error: "PaymentError", message: "Could not create checkout session" });
+      req.log.error({
+        error: true,
+        source: "PAYMENT",
+        message: "Dodo response did not contain a checkout URL",
+        details: `Response body: ${JSON.stringify(data)}`,
+        plan,
+        userId: req.userId,
+      }, "Checkout: no checkout URL in Dodo response");
+      res.status(502).json(structuredError("PAYMENT", "No checkout URL returned from payment gateway", `Response: ${JSON.stringify(data)}`));
       return;
     }
 
-    req.log.info({ plan, checkoutUrl }, "Checkout session created");
+    req.log.info({ source: "PAYMENT", plan, checkoutUrl, userId: req.userId }, "Checkout: session created successfully");
     res.json({ success: true, checkout_url: checkoutUrl });
   } catch (err) {
-    req.log.error({ err }, "Checkout error");
-    res.status(500).json({ error: "InternalError", message: "Failed to create checkout" });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    req.log.error({
+      error: true,
+      source: "PAYMENT",
+      message: "Unexpected error during checkout creation",
+      details: errMsg,
+      stack: err instanceof Error ? err.stack : undefined,
+      plan,
+      userId: req.userId,
+    }, "Checkout: unhandled exception");
+    res.status(500).json(structuredError("PAYMENT", "Failed to create checkout session", errMsg));
   }
 });
 
@@ -115,7 +144,12 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
     const signature = req.headers["webhook-signature"] ?? req.headers["x-webhook-signature"];
 
     if (DODO_WEBHOOK_SECRET && !signature) {
-      req.log.warn("Webhook received without signature");
+      req.log.warn({
+        error: false,
+        source: "PAYMENT",
+        message: "Webhook received without a signature header",
+        details: "DODO_WEBHOOK_SECRET is set but no signature was provided — possible spoofed request",
+      }, "Webhook: missing signature");
     }
 
     const event = req.body as {
@@ -126,30 +160,39 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
       };
     };
 
-    req.log.info({ eventType: event.type }, "Dodo webhook received");
+    req.log.info({ source: "PAYMENT", eventType: event.type }, "Webhook: event received");
 
     if (event.type === "subscription.activated" || event.type === "payment.succeeded") {
       const userId = event.data?.metadata?.userId;
       const plan = event.data?.metadata?.plan as "pro" | "premium" | undefined;
 
       if (userId && plan && ["pro", "premium"].includes(plan)) {
-        const planLimits: Record<string, number> = { pro: 50, premium: 999 };
-
         await db.update(usersTable)
-          .set({
-            plan,
-            contractsUsed: 0,
-          })
+          .set({ plan, contractsUsed: 0 })
           .where(eq(usersTable.id, userId));
 
-        req.log.info({ userId, plan }, "User plan upgraded via webhook");
+        req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: user plan upgraded successfully");
+      } else {
+        req.log.warn({
+          source: "PAYMENT",
+          message: "Webhook payment event missing userId or valid plan in metadata",
+          details: `userId=${userId ?? "missing"}, plan=${plan ?? "missing"}`,
+          eventType: event.type,
+        }, "Webhook: incomplete metadata");
       }
     }
 
     res.json({ success: true });
   } catch (err) {
-    req.log.error({ err }, "Webhook error");
-    res.status(500).json({ error: "WebhookError", message: "Webhook processing failed" });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    req.log.error({
+      error: true,
+      source: "PAYMENT",
+      message: "Unexpected error processing Dodo webhook",
+      details: errMsg,
+      stack: err instanceof Error ? err.stack : undefined,
+    }, "Webhook: unhandled exception");
+    res.status(500).json(structuredError("PAYMENT", "Webhook processing failed", errMsg));
   }
 });
 

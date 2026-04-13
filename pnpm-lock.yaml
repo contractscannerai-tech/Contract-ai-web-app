@@ -247,6 +247,10 @@ importers:
         version: 3.1.0
 
   artifacts/contract-ai:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.103.0
+        version: 2.103.0
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0

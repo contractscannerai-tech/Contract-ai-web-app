@@ -27,7 +27,7 @@ const plans = [
   {
     key: "pro" as const,
     name: "Pro",
-    price: "$19",
+    price: "$29",
     period: "/month",
     description: "For freelancers and small business owners",
     icon: <Zap className="w-5 h-5" />,
@@ -44,7 +44,7 @@ const plans = [
   {
     key: "premium" as const,
     name: "Premium",
-    price: "$49",
+    price: "$99",
     period: "/month",
     description: "For teams and power users",
     icon: <Crown className="w-5 h-5" />,

@@ -14,7 +14,10 @@ const router = Router();
 const groq = new Groq({ apiKey: process.env["GROQ_API_KEY"] });
 
 const OCR_API_KEY = process.env["OCR_API_KEY"];
-const OCR_API_URL = "https://api.ocr.space/parse/url";
+
+function structuredError(source: string, message: string, details: string) {
+  return { error: true, message, details, source };
+}
 
 async function extractTextFromBuffer(
   fileBuffer: Buffer,
@@ -46,7 +49,7 @@ async function extractTextFromBuffer(
       });
 
       if (!response.ok) {
-        throw new Error(`OCR API returned ${response.status}`);
+        throw new Error(`OCR API HTTP error: status=${response.status} body=${await response.text().catch(() => "(unreadable)")}`);
       }
 
       const data = await response.json() as {
@@ -56,12 +59,12 @@ async function extractTextFromBuffer(
       };
 
       if (data.IsErroredOnProcessing) {
-        throw new Error(`OCR processing error: ${data.ErrorMessage?.join(", ")}`);
+        throw new Error(`OCR processing error: ${data.ErrorMessage?.join(", ") ?? "unknown OCR error"}`);
       }
 
       const text = data.ParsedResults?.map((r) => r.ParsedText).join("\n") ?? "";
       if (!text.trim()) {
-        throw new Error("OCR returned empty text");
+        throw new Error("OCR returned empty text — PDF may be image-only or password protected");
       }
 
       return text;
@@ -113,13 +116,14 @@ Rules:
   });
 
   const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("Empty response from AI");
+  if (!content) throw new Error("GROQ returned empty content — no message in choices[0]");
 
-  const parsed = JSON.parse(content) as {
-    summary?: string;
-    risks?: unknown[];
-    key_clauses?: unknown[];
-  };
+  let parsed: { summary?: string; risks?: unknown[]; key_clauses?: unknown[] };
+  try {
+    parsed = JSON.parse(content) as typeof parsed;
+  } catch (jsonErr) {
+    throw new Error(`GROQ response was not valid JSON: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`);
+  }
 
   return {
     summary: typeof parsed.summary === "string" ? parsed.summary : "No summary available",
@@ -149,7 +153,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .limit(1);
 
     if (contracts.length === 0) {
-      res.status(404).json({ error: "NotFound", message: "Contract not found" });
+      res.status(404).json(structuredError("SYSTEM", "Contract not found or does not belong to this user", `contractId=${id} userId=${req.userId}`));
       return;
     }
 
@@ -166,7 +170,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
     const users = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
     const user = users[0];
     if (!user) {
-      res.status(401).json({ error: "Unauthorized", message: "User not found" });
+      res.status(401).json(structuredError("AUTH", "User not found — session may be invalid", `userId=${req.userId}`));
       return;
     }
 
@@ -178,7 +182,11 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
 
     if (!extractedText) {
       try {
-        req.log.info({ contractId: id }, "Starting OCR extraction (using sample text for demo)");
+        req.log.info({
+          source: "OCR",
+          contractId: id,
+          filename: contract.filename,
+        }, "OCR: starting text extraction (using demo sample text)");
 
         extractedText = `SERVICE AGREEMENT
 
@@ -208,10 +216,21 @@ This Agreement is governed by the laws of Delaware.`;
         await db.update(contractsTable)
           .set({ status: "extracted", extractedText })
           .where(eq(contractsTable.id, id));
+
+        req.log.info({ source: "OCR", contractId: id, charCount: extractedText.length }, "OCR: extraction complete");
       } catch (ocrErr) {
-        req.log.error({ ocrErr, contractId: id }, "OCR extraction failed");
+        const errMsg = ocrErr instanceof Error ? ocrErr.message : String(ocrErr);
+        req.log.error({
+          error: true,
+          source: "OCR",
+          message: "OCR text extraction failed",
+          details: errMsg,
+          stack: ocrErr instanceof Error ? ocrErr.stack : undefined,
+          contractId: id,
+          filename: contract.filename,
+        }, "OCR: extraction failed");
         await db.update(contractsTable).set({ status: "failed" }).where(eq(contractsTable.id, id));
-        res.status(500).json({ error: "OCRFailed", message: "Could not extract text from PDF. Please ensure the PDF is not password protected." });
+        res.status(500).json(structuredError("OCR", "Could not extract text from PDF — ensure the file is not password protected or corrupted", errMsg));
         return;
       }
     }
@@ -222,12 +241,27 @@ This Agreement is governed by the laws of Delaware.`;
 
     let analysisResult: { summary: string; risks: string[]; key_clauses: string[] };
     try {
-      req.log.info({ contractId: id }, "Analyzing with GROQ");
+      req.log.info({ source: "AI", contractId: id, model: "llama-3.3-70b-versatile" }, "AI: sending contract to GROQ for analysis");
       analysisResult = await analyzeWithGroq(extractedText);
+      req.log.info({
+        source: "AI",
+        contractId: id,
+        riskCount: analysisResult.risks.length,
+        clauseCount: analysisResult.key_clauses.length,
+      }, "AI: GROQ analysis returned successfully");
     } catch (aiErr) {
-      req.log.error({ aiErr, contractId: id }, "GROQ analysis failed");
+      const errMsg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      req.log.error({
+        error: true,
+        source: "AI",
+        message: "GROQ AI analysis failed",
+        details: errMsg,
+        stack: aiErr instanceof Error ? aiErr.stack : undefined,
+        contractId: id,
+        model: "llama-3.3-70b-versatile",
+      }, "AI: GROQ analysis error");
       await db.update(contractsTable).set({ status: "failed" }).where(eq(contractsTable.id, id));
-      res.status(500).json({ error: "AnalysisFailed", message: "AI analysis failed. Please try again." });
+      res.status(500).json(structuredError("AI", "AI analysis failed — please try again", errMsg));
       return;
     }
 
@@ -249,11 +283,19 @@ This Agreement is governed by the laws of Delaware.`;
       .set({ status: "analyzed", analyzedAt: new Date() })
       .where(eq(contractsTable.id, id));
 
-    req.log.info({ contractId: id, riskLevel }, "Analysis complete");
+    req.log.info({ source: "AI", contractId: id, riskLevel, analysisId }, "AI: analysis stored successfully");
     res.json(analysis);
   } catch (err) {
-    req.log.error({ err }, "Analysis route error");
-    res.status(500).json({ error: "InternalError", message: "Analysis failed" });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    req.log.error({
+      error: true,
+      source: "SYSTEM",
+      message: "Unexpected error in analysis route",
+      details: errMsg,
+      stack: err instanceof Error ? err.stack : undefined,
+      contractId: id,
+    }, "Analysis: unhandled exception");
+    res.status(500).json(structuredError("SYSTEM", "Analysis failed due to an internal error", errMsg));
   }
 });
 

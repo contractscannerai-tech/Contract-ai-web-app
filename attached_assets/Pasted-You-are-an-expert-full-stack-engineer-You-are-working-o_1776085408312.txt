@@ -1,0 +1,198 @@
+You are an expert full-stack engineer. You are working on an EXISTING SaaS app called "ContractAI".
+
+This is NOT a rebuild. This is a FIX + UPGRADE task.
+
+You must carefully update the current system without breaking existing functionality.
+
+---
+
+🔐 TASK 1 — FIX AUTHENTICATION (CRITICAL)
+
+PROBLEM:
+
+The app currently does NOT properly support Google login.
+
+REQUIREMENT:
+
+Implement FULL Google OAuth using Supabase Auth.
+
+👉 IMPORTANT:
+
+- Supabase must handle ALL authentication logic
+- Do NOT build custom OAuth logic
+- Use Supabase built-in Google provider
+
+---
+
+IMPLEMENTATION DETAILS:
+
+1. Add Google Login Button
+
+On login/signup page:
+
+- Add a visible “Continue with Google” button
+- It must be:
+  - Clean
+  - Prominent
+  - One-click login
+
+---
+
+2. Frontend Logic
+
+Use Supabase client:
+
+await supabase.auth.signInWithOAuth({
+  provider: 'google'
+});
+
+---
+
+3. Session Handling
+
+- After login → redirect to dashboard
+- Persist session
+- Restore session on refresh
+- Logout must clear session fully
+
+---
+
+4. UX REQUIREMENTS
+
+- Login must be SIMPLE and FAST
+- No unnecessary steps
+- Clear error messages on failure
+
+---
+
+💰 TASK 2 — UPDATE PRICING (MANDATORY)
+
+Update pricing system:
+
+- Pro Plan → $29
+- Premium Plan → $99
+
+---
+
+REQUIREMENTS:
+
+- Update UI (pricing page, dashboard, upgrade buttons)
+- Ensure backend plan logic matches pricing tiers
+- Ensure Dodo product mapping still works correctly
+
+---
+
+⚡ TASK 3 — LOGGING & ERROR SYSTEM (CRITICAL)
+
+PROBLEM:
+
+Current logs are not clear enough.
+
+REQUIREMENT:
+
+Implement ADVANCED structured logging.
+
+---
+
+EVERY ERROR MUST:
+
+1. Be logged clearly in backend
+2. Include REAL error message
+3. Include exact cause
+4. Be structured as JSON
+
+---
+
+REQUIRED FORMAT:
+
+{
+  "error": true,
+  "message": "Human-readable explanation",
+  "details": "Exact technical error",
+  "source": "AUTH | OCR | AI | PAYMENT | SYSTEM"
+}
+
+---
+
+LOGGING MUST COVER:
+
+- Authentication failures
+- Google OAuth errors
+- OCR failures
+- AI failures
+- Payment failures
+
+---
+
+CRITICAL RULE:
+
+❌ DO NOT log vague messages like:
+"Something went wrong"
+
+✅ MUST log:
+
+- Exact error message
+- Stack trace or reason
+
+---
+
+🧪 TASK 4 — SYSTEM HEALTH CHECK
+
+Audit the entire app and ensure:
+
+- No broken buttons
+- No dead UI elements
+- All flows work:
+  - Login
+  - Upload
+  - Analyze
+  - Payment
+  - Chat
+
+---
+
+VERIFY:
+
+- Frontend → Backend communication works
+- Backend → APIs working
+- No silent failures
+- Proper error handling everywhere
+
+---
+
+🔒 TASK 5 — AUTH + SECURITY VALIDATION
+
+Ensure:
+
+- Supabase auth is properly connected
+- Google OAuth uses correct provider
+- No sensitive data exposed in frontend
+- Session is secure
+
+---
+
+🚨 IMPORTANT RULES
+
+- DO NOT remove existing working features
+- DO NOT introduce placeholders
+- DO NOT break current flow
+
+---
+
+🚀 FINAL GOAL
+
+After this update:
+
+✅ Google login works instantly
+✅ Login flow is smooth and simple
+✅ Pricing is correct ($29 / $99)
+✅ Logs show EXACT errors in JSON
+✅ App runs without hidden failures
+
+---
+
+🧠 FINAL INSTRUCTION
+
+Make these updates carefully and ensure everything is stable, production-ready, and fully functional.
+
+Do not skip validation. Do not assume anything works — verify everything.

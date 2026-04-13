@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
+import AuthCallbackPage from "@/pages/auth-callback";
 import DashboardPage from "@/pages/dashboard";
 import ContractsPage from "@/pages/contracts";
 import UploadPage from "@/pages/upload";
@@ -26,6 +27,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/auth/callback" component={AuthCallbackPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/contracts/upload" component={UploadPage} />
       <Route path="/contracts/:id" component={ContractDetailPage} />
