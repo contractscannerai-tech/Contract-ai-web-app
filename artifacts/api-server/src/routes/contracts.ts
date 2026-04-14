@@ -217,11 +217,7 @@ router.post("/upload", requireAuth, uploadLimiter, (req: AuthenticatedRequest, r
         extractedText,
       }).returning();
 
-      await db.update(usersTable)
-        .set({ contractsUsed: user.contractsUsed + 1 })
-        .where(eq(usersTable.id, req.userId!));
-
-      req.log.info({ source: "SYSTEM", contractId, filename: originalname, status: initialStatus }, "Contract uploaded and processed");
+      req.log.info({ source: "SYSTEM", contractId, filename: originalname, status: initialStatus }, "Contract uploaded — credit will be charged after successful AI analysis");
 
       res.json(contract);
     } catch (dbErr) {
@@ -280,18 +276,22 @@ router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res: Respon
       return;
     }
 
+    const wasAnalyzed = contracts[0].status === "analyzed";
+
     await db.delete(analysesTable).where(eq(analysesTable.contractId, id));
     await db.delete(contractsTable).where(eq(contractsTable.id, id));
 
-    const users = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
-    const user = users[0];
-    if (user && user.contractsUsed > 0) {
-      await db.update(usersTable)
-        .set({ contractsUsed: user.contractsUsed - 1 })
-        .where(eq(usersTable.id, req.userId!));
+    if (wasAnalyzed) {
+      const users = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+      const user = users[0];
+      if (user && user.contractsUsed > 0) {
+        await db.update(usersTable)
+          .set({ contractsUsed: user.contractsUsed - 1 })
+          .where(eq(usersTable.id, req.userId!));
+      }
     }
 
-    req.log.info({ source: "SYSTEM", contractId: id }, "Contract deleted");
+    req.log.info({ source: "SYSTEM", contractId: id, wasAnalyzed }, "Contract deleted");
     res.json({ success: true, message: "Contract deleted" });
   } catch (err) {
     req.log.error({ error: true, source: "SYSTEM", details: err instanceof Error ? err.message : String(err) }, "Delete contract error");

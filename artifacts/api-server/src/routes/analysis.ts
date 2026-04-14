@@ -136,6 +136,17 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       return;
     }
 
+    const PLAN_LIMITS: Record<string, number> = { free: 3, pro: 50, premium: 999 };
+    const limit = PLAN_LIMITS[user.plan] ?? 3;
+    if (user.contractsUsed >= limit) {
+      res.status(403).json(structuredError(
+        "PLAN",
+        `Your ${user.plan} plan allows ${limit} contract${limit === 1 ? "" : "s"}. Please upgrade to analyze more.`,
+        `contractsUsed=${user.contractsUsed} limit=${limit} plan=${user.plan}`
+      ));
+      return;
+    }
+
     const extractedText = contract.extractedText?.trim() ?? "";
 
     if (!extractedText) {
@@ -209,7 +220,11 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .set({ status: "analyzed", analyzedAt: new Date() })
       .where(eq(contractsTable.id, id));
 
-    req.log.info({ source: "AI", contractId: id, riskLevel, analysisId }, "AI: analysis stored");
+    await db.update(usersTable)
+      .set({ contractsUsed: user.contractsUsed + 1 })
+      .where(eq(usersTable.id, req.userId!));
+
+    req.log.info({ source: "AI", contractId: id, riskLevel, analysisId, plan: user.plan, creditsUsed: user.contractsUsed + 1 }, "AI: analysis complete — credit charged");
     res.json(analysis);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
