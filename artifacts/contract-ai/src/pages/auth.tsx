@@ -54,28 +54,14 @@ export default function AuthPage() {
   async function handleGoogleLogin() {
     setGoogleLoading(true);
     try {
-      const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}auth/callback`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: callbackUrl,
+          redirectTo: "https://contract-ai--Contractaiscan.replit.app/auth/callback",
           queryParams: { access_type: "offline", prompt: "consent" },
         },
       });
-      if (error) {
-        toast({
-          title: "Google sign-in failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        setGoogleLoading(false);
-      }
-    } catch (err) {
-      toast({
-        title: "Google sign-in failed",
-        description: err instanceof Error ? err.message : "Unable to start Google sign-in",
-        variant: "destructive",
-      });
+    } catch {
       setGoogleLoading(false);
     }
   }
