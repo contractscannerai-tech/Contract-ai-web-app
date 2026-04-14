@@ -192,7 +192,10 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
 
     req.log.info({ source: "PAYMENT", eventType: event.type }, "Webhook: event received");
 
-    if (event.type === "subscription.activated" || event.type === "payment.succeeded") {
+    const upgradeEvents = ["subscription.activated", "subscription.active", "payment.succeeded", "subscription.renewed"];
+    const downgradeEvents = ["subscription.cancelled", "subscription.expired", "subscription.on_hold", "subscription.failed"];
+
+    if (upgradeEvents.includes(event.type ?? "")) {
       const userId = event.data?.metadata?.userId;
       const plan = event.data?.metadata?.plan as "pro" | "premium" | undefined;
 
@@ -201,14 +204,30 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
           .set({ plan, contractsUsed: 0 })
           .where(eq(usersTable.id, userId));
 
-        req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: user plan upgraded successfully");
+        req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: user plan upgraded/confirmed active");
       } else {
         req.log.warn({
           source: "PAYMENT",
-          message: "Webhook payment event missing userId or valid plan in metadata",
+          message: "Webhook upgrade event missing userId or valid plan in metadata",
           details: `userId=${userId ?? "missing"}, plan=${plan ?? "missing"}`,
           eventType: event.type,
-        }, "Webhook: incomplete metadata");
+        }, "Webhook: incomplete metadata on upgrade event");
+      }
+    } else if (downgradeEvents.includes(event.type ?? "")) {
+      const userId = event.data?.metadata?.userId;
+
+      if (userId) {
+        await db.update(usersTable)
+          .set({ plan: "free" })
+          .where(eq(usersTable.id, userId));
+
+        req.log.info({ source: "PAYMENT", userId, eventType: event.type }, "Webhook: subscription ended — user downgraded to free");
+      } else {
+        req.log.warn({
+          source: "PAYMENT",
+          message: "Webhook downgrade event missing userId",
+          details: `eventType=${event.type ?? "unknown"}`,
+        }, "Webhook: incomplete metadata on downgrade event");
       }
     }
 
