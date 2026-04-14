@@ -1,0 +1,28 @@
+"I am going to share a reference photo with you. Please transform the Dashboard into a world-class, multi-tasking interface while strictly maintaining the existing theme colors. Apply these high-end engineering requirements:
+​1. State-Based Dashboard & Locking:
+​Create high-end, custom buttons for every feature: Deep Analysis, Photo Scan, Key Dates, Risk Alerts, Version Compare, and Negotiation Helper.
+​Use premium SVG icons for each.
+​Lock Logic: Implement a 'Glass-Lock' overlay on buttons not included in the user's current package. When clicked, show a high-end upgrade modal. As users upgrade, use a 'shimmer' animation to unlock them.
+​2. The Risk Speedometer (Visual Gauge):
+​On the analysis results page, build a custom SVG Speedometer Gauge.
+​It must animate from 0% to the Risk Score percentage provided by Groq AI.
+​Color Gradient: 0-30% (Forest Green), 31-60% (Yellow/Orange), 61-100% (Deep Red).
+​Ensure the needle is fluid and the percentage text glows.
+​3. The 'Live' AI Bubble:
+​At the top of the dashboard, implement a 'Floating AI Thought Bubble'.
+​Use Groq AI to generate short, friendly, contract-related tips, reminders (e.g., 'Don't forget to check termination clauses!'), or legal brainstorms that fade in and out smoothly.
+​4. The Seamless AI Chat (Gemini-Style):
+​Remove all traditional 'Chatbot' UI.
+​Implement a persistent, sleek Chat Input Field at the bottom of the dashboard (similar to the Gemini/Claude interface).
+​It must stay accessible even during analysis. For Premium users, this field is active; for others, it shows a 'Upgrade to Chat' placeholder.
+​5. Accuracy & Performance:
+​Ensure the AI prompts are engineered for 99.9% accuracy, demanding the model to cross-reference every clause before outputting.
+​Maintain the 'Fast Lane' PDF logic (digital extraction) and the 'Photo Route' (OCR) for Pro/Premium.
+​6. Final Polish:
+​Use the reference photo for layout inspiration but keep our specific theme colors.
+​Ensure every transition is smooth (300ms ease-in-out).
+​Replace all localhost:3000 with https://contract-ai--Contractaiscan.replit.app."
+​My Extra "Billion-Dollar" Ideas Included:
+​The "Shimmer" Unlock: Instead of a boring lock, the button "glows" when a user upgrades, making the purchase feel rewarding.
+​The Floating AI Brain: This makes the app feel like it's "thinking" for the user even when they aren't doing anything, which increases user retention.
+​Glassmorphism: I’ve instructed the agent to use "Glass" overlays for locked features—this is a very modern design trend used by Apple and Microsoft that makes apps look expensive.

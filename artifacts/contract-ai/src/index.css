@@ -280,3 +280,58 @@
     inset: -1px;
   }
 }
+
+/* Feature grid shimmer effect */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.feature-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 60%
+  );
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+/* AI bubble ambient shimmer */
+@keyframes bubble-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.6; }
+}
+
+.ai-bubble-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.04) 0%,
+    transparent 50%,
+    hsl(var(--primary) / 0.04) 100%
+  );
+  animation: bubble-pulse 4s ease-in-out infinite;
+}
+
+/* Unlock shimmer (one-shot on mount for unlocked features) */
+@keyframes unlock-flash {
+  0%   { opacity: 0; transform: translateX(-100%) skewX(-15deg); }
+  50%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(250%) skewX(-15deg); }
+}
+
+.feature-unlocked::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,0.12) 50%,
+    transparent 70%
+  );
+  animation: unlock-flash 0.8s ease-out 0.3s both;
+  pointer-events: none;
+}
