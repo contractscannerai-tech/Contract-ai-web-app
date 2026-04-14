@@ -78,11 +78,8 @@ export default function UploadPage() {
     setStage("uploading");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
       const contract = await uploadContract.mutateAsync({
-        data: formData as unknown as { file: Blob },
+        data: { file: file },
       });
 
       queryClient.invalidateQueries();

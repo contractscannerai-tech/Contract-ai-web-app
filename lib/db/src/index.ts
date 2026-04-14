@@ -10,7 +10,22 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+function buildConnectionString(rawUrl: string): string {
+  try {
+    const url = new URL(rawUrl);
+    if (!url.searchParams.has("sslmode")) {
+      url.searchParams.set("sslmode", "verify-full");
+    }
+    return url.toString();
+  } catch {
+    const sep = rawUrl.includes("?") ? "&" : "?";
+    return `${rawUrl}${sep}sslmode=verify-full`;
+  }
+}
+
+const connectionString = buildConnectionString(process.env.DATABASE_URL);
+
+export const pool = new Pool({ connectionString });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

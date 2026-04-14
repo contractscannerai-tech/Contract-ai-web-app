@@ -115,6 +115,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     const payload = {
       product_id: productId,
       quantity: 1,
+      payment_link: true,
       customer: {
         name: "",
         email: req.userEmail ?? "",
@@ -126,6 +127,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
         street: "",
         zipcode: "",
       },
+      return_url: `${PROD_BASE_URL}/dashboard?upgraded=true`,
       success_url: `${PROD_BASE_URL}/dashboard?upgraded=true`,
       cancel_url: `${PROD_BASE_URL}/pricing?cancelled=true`,
       metadata: {
@@ -145,33 +147,56 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
       body: JSON.stringify(payload),
     });
 
+    const rawBody = await response.text().catch(() => "");
+
     if (!response.ok) {
-      const errBody = await response.text().catch(() => "(unreadable)");
       req.log.error({
         error: true, source: "PAYMENT",
         message: "Dodo API non-2xx response",
-        details: `HTTP ${response.status}: ${errBody}`,
-        plan, productId, userId: req.userId,
+        details: `HTTP ${response.status}: ${rawBody}`,
+        plan, productId, country, userId: req.userId,
       }, "Checkout: Dodo error");
-      res.status(502).json(structuredError("PAYMENT", "Payment gateway error", `Dodo HTTP ${response.status}: ${errBody}`));
+      res.status(502).json(structuredError("PAYMENT", "Payment gateway error", `Dodo HTTP ${response.status}: ${rawBody}`));
       return;
     }
 
-    const data = await response.json() as { payment_link?: string; url?: string; checkout_url?: string };
-    const checkoutUrl = data.payment_link ?? data.url ?? data.checkout_url;
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      req.log.error({ error: true, source: "PAYMENT", message: "Dodo returned non-JSON", details: rawBody, plan, userId: req.userId }, "Checkout: bad response format");
+      res.status(502).json(structuredError("PAYMENT", "Payment gateway returned invalid response", rawBody.slice(0, 500)));
+      return;
+    }
+
+    req.log.info({ source: "PAYMENT", plan, userId: req.userId, dodoResponse: data }, "Checkout: Dodo full response");
+
+    const subscriptionId = data["subscription_id"] as string | undefined;
+    const paymentId = data["payment_id"] as string | undefined;
+
+    const checkoutUrl =
+      (typeof data["payment_link"] === "string" && data["payment_link"]) ||
+      (typeof data["url"] === "string" && data["url"]) ||
+      (typeof data["checkout_url"] === "string" && data["checkout_url"]) ||
+      (paymentId ? `https://pay.dodopayments.com/payment/${paymentId}` : null) ||
+      (subscriptionId ? `https://pay.dodopayments.com/subscribe/${subscriptionId}` : null);
 
     if (!checkoutUrl) {
       req.log.error({
         error: true, source: "PAYMENT",
-        message: "No checkout URL in Dodo response",
-        details: `Keys: ${Object.keys(data).join(", ")}`,
+        message: "Cannot resolve checkout URL from Dodo response",
+        details: `Response keys: ${Object.keys(data).join(", ")} | Values: ${JSON.stringify(data).slice(0, 500)}`,
         plan, userId: req.userId,
       }, "Checkout: missing checkout URL");
-      res.status(502).json(structuredError("PAYMENT", "No checkout URL from gateway", `Response keys: ${Object.keys(data).join(", ")}`));
+      res.status(502).json(structuredError(
+        "PAYMENT",
+        "Payment gateway did not return a checkout URL",
+        `Dodo response keys: ${Object.keys(data).join(", ")}`
+      ));
       return;
     }
 
-    req.log.info({ source: "PAYMENT", plan, userId: req.userId }, "Checkout: session created");
+    req.log.info({ source: "PAYMENT", plan, userId: req.userId, checkoutUrl }, "Checkout: session created");
     res.json({ success: true, checkout_url: checkoutUrl });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
