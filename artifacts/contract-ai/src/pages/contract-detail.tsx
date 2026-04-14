@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertTriangle, CheckCircle, FileText, ChevronLeft, Loader2,
-  MessageSquare, Shield, Send, BookOpen, AlertCircle
+  MessageSquare, Shield, Send, BookOpen, AlertCircle, RefreshCw,
 } from "lucide-react";
 import {
   useGetContract, useAnalyzeContract, useGetMe, useLogout,
@@ -21,6 +21,16 @@ const riskConfig = {
   medium: { label: "Medium Risk", className: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20", icon: <AlertCircle className="w-4 h-4" /> },
   low: { label: "Low Risk", className: "bg-green-500/10 text-green-700 border-green-500/20", icon: <CheckCircle className="w-4 h-4" /> },
 };
+
+function extractErrorMessage(err: unknown): string {
+  if (!err) return "Something went wrong. Please try again.";
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null) {
+    const e = err as Record<string, unknown>;
+    if (typeof e["message"] === "string") return e["message"];
+  }
+  return String(err);
+}
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,9 +66,14 @@ export default function ContractDetailPage() {
     try {
       await analyzeContract.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(id) });
-      toast({ title: "Analysis complete!", description: "Your contract has been analyzed." });
+      toast({ title: "Analysis complete!", description: "Your contract report is ready." });
     } catch (err) {
-      toast({ title: "Analysis failed", description: "Please try again.", variant: "destructive" });
+      const msg = extractErrorMessage(err);
+      toast({
+        title: "Analysis failed",
+        description: msg,
+        variant: "destructive",
+      });
     } finally {
       setAnalyzing(false);
     }
@@ -72,13 +87,16 @@ export default function ContractDetailPage() {
       await chatMutation.mutateAsync({ contractId: id, data: { message: msg } });
       queryClient.invalidateQueries({ queryKey: getGetChatHistoryQueryKey(id) });
     } catch (err) {
-      toast({ title: "Chat error", description: "Could not send message. Please try again.", variant: "destructive" });
+      const msg2 = extractErrorMessage(err);
+      toast({ title: "Chat error", description: msg2, variant: "destructive" });
       setChatMessage(msg);
     }
   }
 
-  const analysis = contractData?.analysis;
-  const risk = analysis ? riskConfig[analysis.riskLevel] ?? riskConfig.low : null;
+  const analysis = contractData?.analysis as (typeof contractData extends { analysis?: infer A } ? A : never) | undefined;
+  const risk = analysis ? riskConfig[(analysis as { riskLevel?: string }).riskLevel as keyof typeof riskConfig] ?? riskConfig.low : null;
+  const renegotiation = (analysis as { renegotiation?: string[] | null } | undefined)?.renegotiation;
+  const isPremium = user?.plan === "premium";
 
   return (
     <AppLayout user={user} onLogout={handleLogout}>
@@ -123,11 +141,17 @@ export default function ContractDetailPage() {
 
               {!analysis && contractData.status !== "analyzing" && contractData.status !== "extracting" && (
                 <div className="mt-5 pt-5 border-t border-border">
-                  <p className="text-sm text-muted-foreground mb-4">This contract hasn't been analyzed yet.</p>
-                  <Button onClick={handleAnalyze} disabled={analyzing} className="gap-2" data-testid="button-analyze">
-                    {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                    {analyzing ? "Analyzing..." : "Analyze with AI"}
-                  </Button>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {contractData.status === "failed"
+                      ? "Text extraction failed for this file. The file may be password-protected or corrupted."
+                      : "This contract hasn't been analyzed yet."}
+                  </p>
+                  {contractData.status !== "failed" && (
+                    <Button onClick={handleAnalyze} disabled={analyzing} className="gap-2" data-testid="button-analyze">
+                      {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                      {analyzing ? "Analyzing..." : "Analyze with AI"}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -135,7 +159,7 @@ export default function ContractDetailPage() {
                 <div className="mt-5 pt-5 border-t border-border flex items-center gap-3">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">
-                    {contractData.status === "extracting" ? "Extracting text from PDF..." : "Analyzing with AI..."}
+                    {contractData.status === "extracting" ? "Extracting text..." : "Analyzing with AI..."}
                   </p>
                 </div>
               )}
@@ -149,25 +173,40 @@ export default function ContractDetailPage() {
                     <BookOpen className="w-4 h-4 text-primary" />
                     Summary
                   </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{analysis.summary}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{(analysis as { summary?: string }).summary}</p>
                 </div>
 
                 {/* Risks */}
                 <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm" data-testid="section-risks">
-                  <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-destructive" />
-                    Risks ({analysis.risks.length})
-                  </h2>
-                  {analysis.risks.length === 0 ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-base flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-destructive" />
+                      Risk Alerts ({(analysis as { risks?: string[] }).risks?.length ?? 0})
+                    </h2>
+                    {!isPremium && (
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                        {user?.plan === "free" ? "Names only — upgrade for explanations" : ""}
+                      </span>
+                    )}
+                  </div>
+                  {!((analysis as { risks?: string[] }).risks?.length) ? (
                     <p className="text-sm text-muted-foreground">No significant risks detected.</p>
                   ) : (
                     <div className="space-y-3">
-                      {analysis.risks.map((risk, i) => (
+                      {(analysis as { risks: string[] }).risks.map((risk, i) => (
                         <div key={i} className="flex items-start gap-3 bg-destructive/5 border border-destructive/10 rounded-lg p-3" data-testid={`risk-item-${i}`}>
                           <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
                           <p className="text-sm">{risk}</p>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {user?.plan === "free" && (
+                    <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Upgrade to Pro or Legal Partner for full risk explanations and legal context.</p>
+                      <Button variant="outline" size="sm" onClick={() => setLocation("/pricing")}>
+                        Upgrade
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -176,13 +215,13 @@ export default function ContractDetailPage() {
                 <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm" data-testid="section-clauses">
                   <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
-                    Key Clauses ({analysis.keyClauses.length})
+                    Key Clauses ({(analysis as { keyClauses?: string[] }).keyClauses?.length ?? 0})
                   </h2>
-                  {analysis.keyClauses.length === 0 ? (
+                  {!((analysis as { keyClauses?: string[] }).keyClauses?.length) ? (
                     <p className="text-sm text-muted-foreground">No key clauses extracted.</p>
                   ) : (
                     <div className="space-y-3">
-                      {analysis.keyClauses.map((clause, i) => (
+                      {(analysis as { keyClauses: string[] }).keyClauses.map((clause, i) => (
                         <div key={i} className="flex items-start gap-3 bg-primary/5 border border-primary/10 rounded-lg p-3" data-testid={`clause-item-${i}`}>
                           <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                           <p className="text-sm">{clause}</p>
@@ -192,8 +231,44 @@ export default function ContractDetailPage() {
                   )}
                 </div>
 
+                {/* Renegotiation Recommendations — Premium only */}
+                {isPremium && renegotiation && renegotiation.length > 0 && (
+                  <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm" data-testid="section-renegotiation">
+                    <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 text-primary" />
+                      Renegotiation Recommendations ({renegotiation.length})
+                    </h2>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Specific changes to request from the other party before signing.
+                    </p>
+                    <div className="space-y-3">
+                      {renegotiation.map((rec, i) => (
+                        <div key={i} className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/10 rounded-lg p-3" data-testid={`renegotiation-item-${i}`}>
+                          <RefreshCw className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm">{rec}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Renegotiation upsell for non-premium */}
+                {!isPremium && (
+                  <div className="bg-card border border-card-border rounded-xl p-6 text-center" data-testid="section-renegotiation-upsell">
+                    <RefreshCw className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="font-semibold mb-2">Renegotiation Recommendations</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Get specific, clause-level suggestions for what to request from the other party before you sign.
+                      Available on the Legal Partner plan.
+                    </p>
+                    <Button onClick={() => setLocation("/pricing")} data-testid="button-upgrade-renegotiation">
+                      Upgrade to Legal Partner
+                    </Button>
+                  </div>
+                )}
+
                 {/* AI Chat */}
-                {user?.plan === "premium" ? (
+                {isPremium ? (
                   <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-hidden" data-testid="section-chat">
                     <div className="px-5 py-4 border-b border-border flex items-center gap-2">
                       <MessageSquare className="w-4 h-4 text-primary" />
@@ -236,7 +311,7 @@ export default function ContractDetailPage() {
                         type="text"
                         value={chatMessage}
                         onChange={(e) => setChatMessage(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSendMessage(); } }}
                         placeholder="Ask about this contract..."
                         className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                         disabled={chatMutation.isPending}
@@ -244,7 +319,7 @@ export default function ContractDetailPage() {
                       />
                       <Button
                         size="sm"
-                        onClick={handleSendMessage}
+                        onClick={() => void handleSendMessage()}
                         disabled={!chatMessage.trim() || chatMutation.isPending}
                         data-testid="button-send-chat"
                       >
@@ -255,10 +330,10 @@ export default function ContractDetailPage() {
                 ) : (
                   <div className="bg-card border border-card-border rounded-xl p-6 text-center" data-testid="section-chat-upsell">
                     <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">AI Chat is a Premium feature</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Ask AI anything about your contract — what specific clauses mean, hidden obligations, negotiation points.</p>
+                    <h3 className="font-semibold mb-2">AI Chat Assistant</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Ask AI anything about your contract — what clauses mean, hidden obligations, and negotiation points. Unlimited questions on the Legal Partner plan.</p>
                     <Button onClick={() => setLocation("/pricing")} data-testid="button-upgrade-chat">
-                      Upgrade to Premium
+                      Upgrade to Legal Partner
                     </Button>
                   </div>
                 )}

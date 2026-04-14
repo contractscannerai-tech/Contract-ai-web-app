@@ -10,6 +10,7 @@ export const analysesTable = pgTable("analyses", {
   summary: text("summary").notNull(),
   risks: text("risks").array().notNull(),
   keyClauses: text("key_clauses").array().notNull(),
+  renegotiation: text("renegotiation").array(),
   riskLevel: riskLevelEnum("risk_level").notNull().default("low"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

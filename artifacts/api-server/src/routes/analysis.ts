@@ -10,6 +10,8 @@ import { analysisLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 
+const PLAN_LIMITS: Record<string, number> = { free: 3, pro: 20, premium: 999 };
+
 function structuredError(source: string, message: string, details: string) {
   return { error: true, message, details, source };
 }
@@ -20,20 +22,35 @@ function getGroqClient() {
   return new Groq({ apiKey });
 }
 
-async function analyzeWithGroq(text: string): Promise<{
+type AnalysisResult = {
   summary: string;
   risks: string[];
   key_clauses: string[];
-}> {
-  const groq = getGroqClient();
-  const truncatedText = text.slice(0, 14000);
+  renegotiation?: string[];
+};
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content: `You are a senior legal analyst at a top-tier law firm. Your role is to produce a clear, accurate, and professional review of contracts for business clients who are not lawyers.
+function buildSystemPrompt(plan: string): string {
+  if (plan === "free") {
+    return `You are a legal document scanner. Your ONLY job is to identify the NAMES and LOCATIONS of risk clauses — nothing more.
+
+You MUST NOT explain risks. You MUST NOT give advice. You MUST NOT describe what a clause means. Simply identify where risk clauses exist.
+
+Respond ONLY with a valid JSON object in this exact structure:
+{
+  "summary": "string",
+  "risks": ["string", "string", ...],
+  "key_clauses": ["string", "string", ...]
+}
+
+Rules (strictly enforced):
+- "summary": 1–2 sentences. State only what type of document this is and who the parties are. Nothing else.
+- "risks": 3–6 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Risk Name]". Example: "Section 4.2 — Termination Without Cause". Do NOT explain the risk. Do NOT say why it matters. Name only.
+- "key_clauses": 3–5 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Clause Name]". Example: "Section 7.1 — Non-Compete Clause". Name and location only. No explanations.
+- Respond with valid JSON only — no markdown, no extra text, no advice.`;
+  }
+
+  if (plan === "pro") {
+    return `You are a senior legal analyst at a top-tier law firm. Your role is to produce clear, thorough, professional risk analysis for business clients who are not lawyers.
 
 Analyze the provided contract text and respond ONLY with a valid JSON object in this exact structure:
 {
@@ -43,34 +60,74 @@ Analyze the provided contract text and respond ONLY with a valid JSON object in 
 }
 
 Guidelines:
-- "summary": 2–4 sentences. Explain in plain English what the contract is, who the parties are, and its primary purpose. Avoid all legal jargon.
-- "risks": 4–7 items. Each risk must be specific, actionable, and explain WHY it is a risk to the signing party. Format each as: "[Clause/Topic]: [What the risk is and why it matters]". Cover financial exposure, IP ownership, termination conditions, liability caps, non-compete/non-solicitation clauses, auto-renewal traps, and jurisdiction risks where present.
-- "key_clauses": 4–8 items. Identify the most important provisions the reader must understand. For each: "[Clause name]: [Plain-English explanation of what it means and its practical impact]".
-- Be specific — reference actual dollar amounts, time periods, and party names from the contract where available.
-- If the document does not appear to be a contract (e.g., it is a form, letter, or unrelated text), still provide the best analysis you can based on what is present.
-- Respond with valid JSON only — no markdown fences, no extra text.`,
-      },
-      {
-        role: "user",
-        content: `Please analyze the following contract:\n\n${truncatedText}`,
-      },
+- "summary": 3–5 sentences in plain English. Explain what the contract is, who the parties are, the primary purpose, and the overall risk posture.
+- "risks": 5–8 items. For each risk you MUST:
+  - Name the clause and its section reference
+  - Explain in simple, professional English exactly what the risk is
+  - Explain WHY it is dangerous to the signing party with specific consequences
+  - Reference actual dollar amounts, time periods, and party names from the contract where available
+  - Format: "[Section X.X — Clause Name]: [Plain-English explanation of the risk and why it matters to the signing party]"
+- "key_clauses": 5–8 items. Identify the most important provisions. For each:
+  - Name the clause and location
+  - Explain in plain English what it means and its practical impact
+  - Format: "[Section X.X — Clause Name]: [Plain-English explanation of what this means and its real-world impact]"
+- Be specific, thorough, and educational. The user is paying for expert analysis, not vague labels.
+- Respond with valid JSON only — no markdown fences, no extra text.`;
+  }
+
+  return `You are ContractAI's most advanced legal analyst — the equivalent of a senior partner at a top law firm combined with a skilled negotiator. Produce the most comprehensive contract analysis possible.
+
+Analyze the provided contract text and respond ONLY with a valid JSON object in this exact structure:
+{
+  "summary": "string",
+  "risks": ["string", "string", ...],
+  "key_clauses": ["string", "string", ...],
+  "renegotiation": ["string", "string", ...]
+}
+
+Guidelines:
+- "summary": 4–6 sentences. Cover: what the contract is, parties involved, primary purpose, overall risk posture, and one key observation the signing party must know immediately.
+- "risks": 6–10 items. For each risk:
+  - Reference the exact section/clause
+  - Explain in plain English what the risk is and the specific harm it could cause
+  - Include dollar exposure, time commitments, or legal consequences where present
+  - Format: "[Section X.X — Clause Name]: [Detailed explanation with specific consequences and why this matters most]"
+- "key_clauses": 5–8 items. Most important provisions with plain-English explanation of practical impact.
+  - Format: "[Section X.X — Clause Name]: [Explanation of what this means and how it affects the signing party day-to-day]"
+- "renegotiation": 4–7 actionable renegotiation recommendations the signing party should request before signing.
+  - Each recommendation must be specific and directly tied to a clause in this contract
+  - Format: "[Clause/Topic]: [Specific change to request — e.g., 'Request that Section 4.2 be amended to require 30 days written notice instead of immediate termination']"
+  - Cover: payment terms, liability caps, IP ownership, termination notice, non-compete scope/duration, auto-renewal opt-out, jurisdiction, and indemnification where applicable
+- Respond with valid JSON only — no markdown fences, no extra text.`;
+}
+
+async function analyzeWithGroq(text: string, plan: string): Promise<AnalysisResult> {
+  const groq = getGroqClient();
+  const truncatedText = text.slice(0, 14000);
+  const systemPrompt = buildSystemPrompt(plan);
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Please analyze the following contract:\n\n${truncatedText}` },
     ],
     temperature: 0.05,
-    max_tokens: 3000,
+    max_tokens: plan === "free" ? 1200 : 3000,
     response_format: { type: "json_object" },
   });
 
   const content = completion.choices[0]?.message?.content;
   if (!content) throw new Error("GROQ returned empty content — no message in choices[0]");
 
-  let parsed: { summary?: string; risks?: unknown[]; key_clauses?: unknown[] };
+  let parsed: { summary?: string; risks?: unknown[]; key_clauses?: unknown[]; renegotiation?: unknown[] };
   try {
     parsed = JSON.parse(content) as typeof parsed;
   } catch (jsonErr) {
     throw new Error(`GROQ response was not valid JSON: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`);
   }
 
-  return {
+  const result: AnalysisResult = {
     summary: typeof parsed.summary === "string" && parsed.summary.trim()
       ? parsed.summary
       : "Summary not available — the document may not be a standard contract.",
@@ -81,13 +138,19 @@ Guidelines:
       ? parsed.key_clauses.map(String)
       : ["No key clauses identified in the provided text."],
   };
+
+  if (plan === "premium" && Array.isArray(parsed.renegotiation) && parsed.renegotiation.length > 0) {
+    result.renegotiation = parsed.renegotiation.map(String);
+  }
+
+  return result;
 }
 
 function calculateRiskLevel(risks: string[]): "low" | "medium" | "high" {
   if (risks.length === 0) return "low";
   const riskText = risks.join(" ").toLowerCase();
   const highRiskWords = [
-    "penalty", "liable", "liability", "termination", "forfeit", "forfeit",
+    "penalty", "liable", "liability", "termination", "forfeit",
     "immediate", "unlimited", "indemnif", "damages", "lawsuit", "litigation",
     "sue", "court", "jurisdiction", "arbitration", "injunction", "breach",
   ];
@@ -136,12 +199,11 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       return;
     }
 
-    const PLAN_LIMITS: Record<string, number> = { free: 3, pro: 50, premium: 999 };
     const limit = PLAN_LIMITS[user.plan] ?? 3;
     if (user.contractsUsed >= limit) {
       res.status(403).json(structuredError(
         "PLAN",
-        `Your ${user.plan} plan allows ${limit} contract${limit === 1 ? "" : "s"}. Please upgrade to analyze more.`,
+        `Your ${user.plan} plan allows ${limit} contract analysis${limit === 1 ? "" : "es"} per month. Please upgrade to analyze more.`,
         `contractsUsed=${user.contractsUsed} limit=${limit} plan=${user.plan}`
       ));
       return;
@@ -151,16 +213,15 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
 
     if (!extractedText) {
       req.log.error({
-        error: true,
-        source: "OCR",
+        error: true, source: "EXTRACTION",
         message: "No extracted text available for this contract",
         details: `contractId=${id}, status=${contract.status}. Text extraction likely failed at upload time.`,
         contractId: id,
       }, "Analysis: no text to analyze");
 
       res.status(422).json(structuredError(
-        "OCR",
-        "No text could be extracted from this file. Please delete and re-upload the file, ensuring it is not password-protected.",
+        "EXTRACTION",
+        "No text could be extracted from this file. Please delete it and re-upload, making sure the file is not password-protected or corrupted.",
         `Contract status: ${contract.status}. Text extraction failed at upload.`
       ));
       return;
@@ -170,28 +231,30 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .set({ status: "analyzing" })
       .where(eq(contractsTable.id, id));
 
-    let analysisResult: { summary: string; risks: string[]; key_clauses: string[] };
+    let analysisResult: AnalysisResult;
     try {
       req.log.info({
         source: "AI",
         contractId: id,
         model: "llama-3.3-70b-versatile",
+        plan: user.plan,
         charCount: extractedText.length,
-      }, "AI: sending contract to GROQ");
+      }, `AI: sending contract to GROQ [${user.plan} plan]`);
 
-      analysisResult = await analyzeWithGroq(extractedText);
+      analysisResult = await analyzeWithGroq(extractedText, user.plan);
 
       req.log.info({
         source: "AI",
         contractId: id,
+        plan: user.plan,
         riskCount: analysisResult.risks.length,
         clauseCount: analysisResult.key_clauses.length,
+        hasRenegotiation: !!analysisResult.renegotiation,
       }, "AI: GROQ analysis complete");
     } catch (aiErr) {
       const errMsg = aiErr instanceof Error ? aiErr.message : String(aiErr);
       req.log.error({
-        error: true,
-        source: "AI",
+        error: true, source: "AI",
         message: "GROQ AI analysis failed",
         details: errMsg,
         stack: aiErr instanceof Error ? aiErr.stack : undefined,
@@ -213,6 +276,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       summary: analysisResult.summary,
       risks: analysisResult.risks,
       keyClauses: analysisResult.key_clauses,
+      renegotiation: analysisResult.renegotiation ?? null,
       riskLevel,
     }).returning();
 
@@ -224,13 +288,16 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .set({ contractsUsed: user.contractsUsed + 1 })
       .where(eq(usersTable.id, req.userId!));
 
-    req.log.info({ source: "AI", contractId: id, riskLevel, analysisId, plan: user.plan, creditsUsed: user.contractsUsed + 1 }, "AI: analysis complete — credit charged");
+    req.log.info({
+      source: "AI", contractId: id, riskLevel, analysisId,
+      plan: user.plan, creditsUsed: user.contractsUsed + 1,
+    }, "AI: analysis complete — credit charged");
+
     res.json(analysis);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     req.log.error({
-      error: true,
-      source: "SYSTEM",
+      error: true, source: "SYSTEM",
       message: "Unexpected error in analysis route",
       details: errMsg,
       stack: err instanceof Error ? err.stack : undefined,
