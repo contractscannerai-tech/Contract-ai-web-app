@@ -8,6 +8,8 @@ import { generalLimiter } from "./lib/rate-limit.js";
 
 const app: Express = express();
 
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -32,7 +34,11 @@ app.use(cors({
   origin: true,
   credentials: true,
 }));
+
 app.use(cookieParser(process.env["SESSION_SECRET"]));
+
+app.use("/api/payments/webhook", express.raw({ type: "*/*" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(generalLimiter);

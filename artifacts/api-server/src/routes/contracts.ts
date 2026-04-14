@@ -165,8 +165,20 @@ router.post("/upload", requireAuth, uploadLimiter, (req: AuthenticatedRequest, r
         return;
       }
 
-      const contractId = uuidv4();
       const { buffer, originalname, mimetype, size } = req.file;
+
+      const isImageUpload = mimetype.startsWith("image/");
+      if (isImageUpload && user.plan === "free") {
+        res.status(403).json({
+          error: "PlanRequired",
+          message: "Photo scanning is available on Pro and Premium plans. Please upgrade to scan contract photos.",
+          plan: user.plan,
+          requiredPlan: "pro",
+        });
+        return;
+      }
+
+      const contractId = uuidv4();
 
       req.log.info({
         source: "OCR",

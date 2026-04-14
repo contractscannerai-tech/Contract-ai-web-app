@@ -42,11 +42,16 @@ export default function UploadPage() {
     setLocation("/");
   }
 
+  const isFreePlan = user?.plan === "free";
+
   function validateFile(file: File): string | null {
     if (!ACCEPTED_TYPES[file.type]) {
       return "Only PDF or image files (JPEG, PNG, WebP) are supported";
     }
     if (file.size > MAX_SIZE) return `File must be under 10MB (current: ${formatFileSize(file.size)})`;
+    if (file.type.startsWith("image/") && isFreePlan) {
+      return "Photo scanning requires a Pro or Premium plan. Please upgrade or upload a PDF instead.";
+    }
     return null;
   }
 
@@ -191,7 +196,20 @@ export default function UploadPage() {
                 <p className="font-medium text-sm">Drop your contract here</p>
                 <p className="text-xs text-muted-foreground mt-1">or click to browse files</p>
               </div>
-              <p className="text-xs text-muted-foreground">PDF or image (JPEG, PNG, WebP) · Max 10MB</p>
+              <p className="text-xs text-muted-foreground">
+                {isFreePlan
+                  ? "PDF only on Free plan · Max 10MB"
+                  : "PDF or image (JPEG, PNG, WebP) · Max 10MB"}
+              </p>
+              {isFreePlan && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setLocation("/pricing"); }}
+                  className="text-xs text-primary underline underline-offset-2"
+                >
+                  Upgrade to scan photos
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -1,11 +1,14 @@
 import { Router } from "express";
 import type { Response, Request } from "express";
+import crypto from "crypto";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
+
+const PROD_BASE_URL = "https://contract-ai--Contractaiscan.replit.app";
 
 function structuredError(source: string, message: string, details: string) {
   return { error: true, message, details, source };
@@ -20,37 +23,68 @@ async function getCountryFromIp(ip: string): Promise<string> {
   const services = [
     async () => {
       const r = await fetch(`https://ipapi.co/${ip}/country/`, { signal: AbortSignal.timeout(3000) });
-      if (!r.ok) throw new Error(`ipapi.co status ${r.status}`);
+      if (!r.ok) throw new Error(`ipapi.co ${r.status}`);
       const text = (await r.text()).trim();
-      if (text.length !== 2 || !/^[A-Z]{2}$/.test(text)) throw new Error(`ipapi.co bad response: ${text}`);
+      if (!/^[A-Z]{2}$/.test(text)) throw new Error(`ipapi.co bad value: ${text}`);
       return text;
     },
     async () => {
       const r = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, { signal: AbortSignal.timeout(3000) });
-      if (!r.ok) throw new Error(`ip-api.com status ${r.status}`);
-      const data = await r.json() as { countryCode?: string };
-      if (!data.countryCode) throw new Error("ip-api.com: no countryCode");
-      return data.countryCode;
+      if (!r.ok) throw new Error(`ip-api.com ${r.status}`);
+      const d = await r.json() as { countryCode?: string };
+      if (!d.countryCode || !/^[A-Z]{2}$/.test(d.countryCode)) throw new Error("ip-api.com: missing countryCode");
+      return d.countryCode;
     },
   ];
 
-  for (const service of services) {
-    try {
-      const country = await service();
-      return country;
-    } catch {
-      continue;
-    }
+  for (const svc of services) {
+    try { return await svc(); } catch { continue; }
   }
-
   return "US";
+}
+
+function verifyDodoSignature(
+  rawBody: Buffer,
+  headers: Record<string, string | string[] | undefined>,
+  secret: string
+): boolean {
+  try {
+    const msgId = String(headers["webhook-id"] ?? "");
+    const msgTimestamp = String(headers["webhook-timestamp"] ?? "");
+    const sigHeader = String(headers["webhook-signature"] ?? "");
+
+    if (!msgId || !msgTimestamp || !sigHeader) return false;
+
+    const cleanSecret = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+    const secretBytes = Buffer.from(cleanSecret, "base64");
+
+    const message = `${msgId}.${msgTimestamp}.${rawBody.toString("utf8")}`;
+    const expectedSig = crypto
+      .createHmac("sha256", secretBytes)
+      .update(message)
+      .digest("base64");
+
+    const providedSigs = sigHeader.split(" ").map((s) => s.replace(/^v\d+,/, ""));
+    return providedSigs.some((sig) => {
+      try {
+        return crypto.timingSafeEqual(
+          Buffer.from(sig, "base64"),
+          Buffer.from(expectedSig, "base64")
+        );
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
 }
 
 router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { plan } = req.body as { plan?: string };
 
   if (!plan || !["pro", "premium"].includes(plan)) {
-    res.status(400).json(structuredError("PAYMENT", "Invalid plan specified", `Received plan=${plan ?? "undefined"}, must be 'pro' or 'premium'`));
+    res.status(400).json(structuredError("PAYMENT", "Invalid plan", `plan=${plan ?? "undefined"} must be 'pro' or 'premium'`));
     return;
   }
 
@@ -59,23 +93,16 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
   const DODO_PREMIUM_PLAN_ID = process.env["DODO_PREMIUM_PLAN_ID"];
 
   if (!DODO_API_KEY) {
-    req.log.error({
-      error: true, source: "PAYMENT",
-      message: "Dodo Payments API key not configured",
-      details: "DODO_API_KEY environment variable is missing",
-    }, "Checkout: DODO_API_KEY missing");
-    res.status(500).json(structuredError("PAYMENT", "Payment service is not configured", "DODO_API_KEY is missing from environment"));
+    req.log.error({ error: true, source: "PAYMENT", message: "DODO_API_KEY missing" }, "Checkout: missing API key");
+    res.status(500).json(structuredError("PAYMENT", "Payment service not configured", "DODO_API_KEY missing"));
     return;
   }
 
   const productId = plan === "pro" ? DODO_PRO_PLAN_ID : DODO_PREMIUM_PLAN_ID;
   if (!productId) {
-    req.log.error({
-      error: true, source: "PAYMENT",
-      message: "Dodo product ID not configured for plan",
-      details: `Plan=${plan}, missing env var: ${plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID"}`,
-    }, "Checkout: product ID missing");
-    res.status(500).json(structuredError("PAYMENT", `Product ID for ${plan} plan is not configured`, `Missing ${plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID"}`));
+    const envName = plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID";
+    req.log.error({ error: true, source: "PAYMENT", message: `${envName} missing` }, "Checkout: missing product ID");
+    res.status(500).json(structuredError("PAYMENT", `${plan} plan product ID not configured`, `${envName} missing`));
     return;
   }
 
@@ -83,10 +110,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
       ?? req.socket.remoteAddress
       ?? "127.0.0.1";
-
     const country = await getCountryFromIp(clientIp);
-
-    const BASE_URL = "https://contract-ai--Contractaiscan.replit.app";
 
     const payload = {
       product_id: productId,
@@ -102,15 +126,15 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
         street: "",
         zipcode: "",
       },
-      success_url: `${BASE_URL}/dashboard?upgraded=true`,
-      cancel_url: `${BASE_URL}/pricing?cancelled=true`,
+      success_url: `${PROD_BASE_URL}/dashboard?upgraded=true`,
+      cancel_url: `${PROD_BASE_URL}/pricing?cancelled=true`,
       metadata: {
         userId: req.userId,
         plan,
       },
     };
 
-    req.log.info({ source: "PAYMENT", plan, productId, country, userId: req.userId, clientIp }, "Checkout: creating Dodo subscription");
+    req.log.info({ source: "PAYMENT", plan, productId, country, userId: req.userId }, "Checkout: creating Dodo subscription");
 
     const response = await fetch("https://api.dodopayments.com/subscriptions", {
       method: "POST",
@@ -122,49 +146,37 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "(unreadable)");
+      const errBody = await response.text().catch(() => "(unreadable)");
       req.log.error({
         error: true, source: "PAYMENT",
-        message: "Dodo Payments API returned non-2xx response",
-        details: `HTTP ${response.status}: ${errorText}`,
+        message: "Dodo API non-2xx response",
+        details: `HTTP ${response.status}: ${errBody}`,
         plan, productId, userId: req.userId,
-      }, "Checkout: Dodo API error");
-      res.status(502).json(structuredError("PAYMENT", "Payment gateway returned an error", `Dodo HTTP ${response.status}: ${errorText}`));
+      }, "Checkout: Dodo error");
+      res.status(502).json(structuredError("PAYMENT", "Payment gateway error", `Dodo HTTP ${response.status}: ${errBody}`));
       return;
     }
 
-    const data = await response.json() as {
-      payment_link?: string;
-      url?: string;
-      checkout_url?: string;
-      client_secret?: string;
-    };
-
+    const data = await response.json() as { payment_link?: string; url?: string; checkout_url?: string };
     const checkoutUrl = data.payment_link ?? data.url ?? data.checkout_url;
 
     if (!checkoutUrl) {
       req.log.error({
         error: true, source: "PAYMENT",
-        message: "Dodo response did not contain a checkout URL",
-        details: `Response keys: ${Object.keys(data).join(", ")}`,
+        message: "No checkout URL in Dodo response",
+        details: `Keys: ${Object.keys(data).join(", ")}`,
         plan, userId: req.userId,
-      }, "Checkout: no checkout URL in Dodo response");
-      res.status(502).json(structuredError("PAYMENT", "No checkout URL returned from payment gateway", `Response keys: ${Object.keys(data).join(", ")}`));
+      }, "Checkout: missing checkout URL");
+      res.status(502).json(structuredError("PAYMENT", "No checkout URL from gateway", `Response keys: ${Object.keys(data).join(", ")}`));
       return;
     }
 
-    req.log.info({ source: "PAYMENT", plan, userId: req.userId }, "Checkout: session created successfully");
+    req.log.info({ source: "PAYMENT", plan, userId: req.userId }, "Checkout: session created");
     res.json({ success: true, checkout_url: checkoutUrl });
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    req.log.error({
-      error: true, source: "PAYMENT",
-      message: "Unexpected error during checkout creation",
-      details: errMsg,
-      stack: err instanceof Error ? err.stack : undefined,
-      plan, userId: req.userId,
-    }, "Checkout: unhandled exception");
-    res.status(500).json(structuredError("PAYMENT", "Failed to create checkout session", errMsg));
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ error: true, source: "PAYMENT", message: "Checkout exception", details: msg, plan, userId: req.userId }, "Checkout: unhandled error");
+    res.status(500).json(structuredError("PAYMENT", "Failed to create checkout", msg));
   }
 });
 
@@ -172,30 +184,53 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
   const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"];
 
   try {
-    const signature = req.headers["webhook-signature"] ?? req.headers["x-webhook-signature"];
+    const rawBody: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
 
-    if (DODO_WEBHOOK_SECRET && !signature) {
-      req.log.warn({
-        error: false, source: "PAYMENT",
-        message: "Webhook received without a signature header",
-        details: "DODO_WEBHOOK_SECRET is set but no signature was provided — possible spoofed request",
-      }, "Webhook: missing signature");
+    if (DODO_WEBHOOK_SECRET) {
+      const isValid = verifyDodoSignature(rawBody, req.headers as Record<string, string | undefined>, DODO_WEBHOOK_SECRET);
+      if (!isValid) {
+        req.log.warn({
+          error: true, source: "PAYMENT",
+          message: "Webhook signature verification failed",
+          details: "HMAC-SHA256 mismatch or missing webhook-id/webhook-timestamp headers",
+        }, "Webhook: invalid signature");
+        res.status(401).json(structuredError("PAYMENT", "Webhook signature invalid", "HMAC verification failed"));
+        return;
+      }
+      req.log.info({ source: "PAYMENT" }, "Webhook: signature verified");
+    } else {
+      req.log.warn({ source: "PAYMENT", message: "DODO_WEBHOOK_SECRET not set — skipping verification" }, "Webhook: no secret configured");
     }
 
-    const event = req.body as {
+    let event: {
       type?: string;
-      data?: {
-        metadata?: { userId?: string; plan?: string };
-        status?: string;
-      };
+      data?: { metadata?: { userId?: string; plan?: string }; status?: string };
     };
+
+    try {
+      event = JSON.parse(rawBody.toString("utf8")) as typeof event;
+    } catch {
+      res.status(400).json(structuredError("PAYMENT", "Invalid JSON body", "Could not parse webhook payload"));
+      return;
+    }
 
     req.log.info({ source: "PAYMENT", eventType: event.type }, "Webhook: event received");
 
-    const upgradeEvents = ["subscription.activated", "subscription.active", "payment.succeeded", "subscription.renewed"];
-    const downgradeEvents = ["subscription.cancelled", "subscription.expired", "subscription.on_hold", "subscription.failed"];
+    const UPGRADE_EVENTS = new Set([
+      "subscription.active",
+      "subscription.activated",
+      "subscription.renewed",
+      "payment.succeeded",
+    ]);
 
-    if (upgradeEvents.includes(event.type ?? "")) {
+    const DOWNGRADE_EVENTS = new Set([
+      "subscription.cancelled",
+      "subscription.expired",
+      "subscription.on_hold",
+      "subscription.failed",
+    ]);
+
+    if (UPGRADE_EVENTS.has(event.type ?? "")) {
       const userId = event.data?.metadata?.userId;
       const plan = event.data?.metadata?.plan as "pro" | "premium" | undefined;
 
@@ -204,43 +239,51 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
           .set({ plan, contractsUsed: 0 })
           .where(eq(usersTable.id, userId));
 
-        req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: user plan upgraded/confirmed active");
+        req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: plan upgraded — features unlocked");
       } else {
         req.log.warn({
           source: "PAYMENT",
-          message: "Webhook upgrade event missing userId or valid plan in metadata",
-          details: `userId=${userId ?? "missing"}, plan=${plan ?? "missing"}`,
-          eventType: event.type,
-        }, "Webhook: incomplete metadata on upgrade event");
+          message: "Upgrade event missing userId or valid plan in metadata",
+          details: `userId=${userId ?? "missing"}, plan=${plan ?? "missing"}, eventType=${event.type}`,
+        }, "Webhook: incomplete upgrade metadata");
       }
-    } else if (downgradeEvents.includes(event.type ?? "")) {
+    } else if (DOWNGRADE_EVENTS.has(event.type ?? "")) {
       const userId = event.data?.metadata?.userId;
 
       if (userId) {
-        await db.update(usersTable)
-          .set({ plan: "free" })
-          .where(eq(usersTable.id, userId));
+        const current = await db.select({ plan: usersTable.plan })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId))
+          .limit(1);
 
-        req.log.info({ source: "PAYMENT", userId, eventType: event.type }, "Webhook: subscription ended — user downgraded to free");
+        if (current[0] && current[0].plan !== "free") {
+          await db.update(usersTable)
+            .set({ plan: "free" })
+            .where(eq(usersTable.id, userId));
+
+          req.log.info({ source: "PAYMENT", userId, prevPlan: current[0].plan, eventType: event.type }, "Webhook: subscription ended — downgraded to free");
+        }
       } else {
         req.log.warn({
           source: "PAYMENT",
-          message: "Webhook downgrade event missing userId",
-          details: `eventType=${event.type ?? "unknown"}`,
-        }, "Webhook: incomplete metadata on downgrade event");
+          message: "Downgrade event missing userId",
+          details: `eventType=${event.type}`,
+        }, "Webhook: incomplete downgrade metadata");
       }
+    } else {
+      req.log.info({ source: "PAYMENT", eventType: event.type }, "Webhook: unhandled event type (acknowledged)");
     }
 
     res.json({ success: true });
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
+    const msg = err instanceof Error ? err.message : String(err);
     req.log.error({
       error: true, source: "PAYMENT",
-      message: "Unexpected error processing Dodo webhook",
-      details: errMsg,
+      message: "Unexpected error processing webhook",
+      details: msg,
       stack: err instanceof Error ? err.stack : undefined,
     }, "Webhook: unhandled exception");
-    res.status(500).json(structuredError("PAYMENT", "Webhook processing failed", errMsg));
+    res.status(500).json(structuredError("PAYMENT", "Webhook processing failed", msg));
   }
 });
 
