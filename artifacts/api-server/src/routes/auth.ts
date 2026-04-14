@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Response } from "express";
 import { supabaseAdmin } from "../lib/supabase.js";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, contractsTable, analysesTable, chatMessagesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
@@ -238,6 +238,58 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       userId: req.userId,
     }, "Get me: unhandled exception");
     res.status(500).json(structuredError("AUTH", "Failed to get user info", err instanceof Error ? err.message : String(err)));
+  }
+});
+
+router.delete("/me", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
+  try {
+    req.log.info({ source: "AUTH", userId }, "Delete account: starting full data purge");
+
+    // 1. Delete all chat messages for this user
+    await db.delete(chatMessagesTable).where(eq(chatMessagesTable.userId, userId));
+
+    // 2. Fetch all contracts so we can delete their analyses
+    const userContracts = await db
+      .select({ id: contractsTable.id })
+      .from(contractsTable)
+      .where(eq(contractsTable.userId, userId));
+
+    // 3. Delete analyses for each contract
+    for (const c of userContracts) {
+      await db.delete(analysesTable).where(eq(analysesTable.contractId, c.id));
+    }
+
+    // 4. Delete all contracts
+    await db.delete(contractsTable).where(eq(contractsTable.userId, userId));
+
+    // 5. Delete user row from our DB
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+
+    // 6. Delete from Supabase Auth (revokes all sessions)
+    const { error: supabaseErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (supabaseErr) {
+      req.log.warn({
+        error: true,
+        source: "AUTH",
+        message: "Supabase auth deletion failed — local data already purged",
+        details: supabaseErr.message,
+        userId,
+      }, "Delete account: Supabase deleteUser error (non-fatal, local data cleared)");
+    }
+
+    res.clearCookie("sb-session");
+    req.log.info({ source: "AUTH", userId }, "Delete account: all user data purged successfully");
+    res.json({ success: true, message: "Account and all associated data deleted." });
+  } catch (err) {
+    req.log.error({
+      error: true,
+      source: "AUTH",
+      message: "Failed to delete account",
+      details: err instanceof Error ? err.message : String(err),
+      userId,
+    }, "Delete account: unhandled exception");
+    res.status(500).json(structuredError("AUTH", "Account deletion failed — please try again or contact support", err instanceof Error ? err.message : String(err)));
   }
 });
 

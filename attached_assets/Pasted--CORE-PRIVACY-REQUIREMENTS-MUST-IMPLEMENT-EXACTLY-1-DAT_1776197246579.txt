@@ -1,0 +1,101 @@
+🔐 CORE PRIVACY REQUIREMENTS (MUST IMPLEMENT EXACTLY)
+1. DATA COLLECTION RULES
+The system must only collect:
+Email address
+Full name
+Password (handled securely via Supabase or authentication provider)
+Google OAuth identity (if used)
+🚫 DO NOT collect:
+Phone numbers
+Unnecessary personal data
+2. DOCUMENT UPLOAD HANDLING (CRITICAL RULE)
+Users may upload:
+PDF files
+Images (for OCR processing)
+REQUIRED BEHAVIOR:
+Files are ONLY used for analysis
+Files must NEVER be permanently stored
+Files must be automatically deleted within 30 seconds after AI processing is completed
+No raw document content should remain in database or logs
+3. AI PROCESSING RULES
+Full document content is sent to AI (GROQ API) for analysis
+AI returns:
+summary
+risks
+key clauses
+🚫 MUST NOT:
+Store full document text after processing
+Log sensitive contract content
+4. OCR PROCESSING RULES
+Images are sent to OCR API for text extraction
+OCR is external (API-based)
+🚫 MUST NOT:
+Store OCR raw outputs permanently
+Retain image files after processing
+5. DATA STORAGE RULES
+Allowed storage:
+User authentication data (via Supabase)
+Contract analysis results (structured output only)
+Contract name/title only
+🚫 MUST NOT store:
+Uploaded PDFs
+Uploaded images
+Full extracted contract text
+6. DATA RETENTION RULES
+Uploaded files: deleted within 30 seconds after processing
+User account data: stored until user deletes account
+Analysis results: stored only while account exists
+7. USER DATA CONTROL (MANDATORY)
+Implement:
+“Delete Account” feature
+When account is deleted:
+Remove all user data from database
+Remove all analysis history
+Revoke authentication session
+8. THIRD-PARTY DATA SHARING DISCLOSURE
+System MUST explicitly document and internally respect that data is shared ONLY with:
+GROQ API (AI processing)
+OCR API (image to text conversion)
+Dodo Payments (payment + tax processing)
+Supabase (authentication + database)
+🚫 No other data sharing is allowed.
+9. EMAIL USAGE RULES
+Email is ONLY used for:
+Authentication
+Account support
+🚫 No marketing emails
+🚫 No unsolicited messages
+10. LOCATION DATA USAGE
+IP-based location may be used ONLY for payment tax calculation via Dodo Payments
+Location data must NOT be stored permanently
+Must NOT be used for tracking or profiling
+11. SECURITY REQUIREMENTS
+All sensitive data must be encrypted in transit (HTTPS)
+Authentication handled securely via Supabase
+No sensitive logs allowed in console or server logs
+12. LOGGING RULES (VERY IMPORTANT)
+Logs MUST follow this format:
+{ "error": true, "message": "Human-readable explanation", "details": "Technical error details", "source": "OCR | AI | AUTH | PAYMENT | SYSTEM" }
+🚫 Logs must NEVER include:
+Full contracts
+Personal user data
+Sensitive extracted text
+13. FRONTEND RULES
+Frontend must NOT call external APIs directly
+All API calls go through backend only
+Frontend must display clear loading + error states
+No fake or non-functional buttons allowed
+14. PRIVACY POLICY CONSISTENCY RULE
+Everything implemented in code MUST match the Privacy Policy exactly:
+No hidden data collection
+No undocumented storage
+No silent tracking
+15. COMPLIANCE GOAL
+This system must be fully compliant with privacy expectations for apps handling sensitive documents and must be suitable for submission to app stores like Google Play.
+🚀 FINAL INSTRUCTION
+Ensure:
+Privacy rules are enforced in backend logic
+No violation of data handling rules
+No storage of restricted data
+Full alignment with privacy policy text
+If any feature conflicts with these rules, modify the feature to comply instead of ignoring the rule.

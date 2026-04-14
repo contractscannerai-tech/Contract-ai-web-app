@@ -100,7 +100,12 @@ Answer questions clearly and concisely. Explain legal terms in plain English. If
     req.log.info({ contractId, userId: req.userId }, "Chat message processed");
     res.json({ reply, messageId: assistantMsgId });
   } catch (err) {
-    req.log.error({ err }, "Chat error");
+    req.log.error({
+      error: true, source: "AI",
+      message: "Chat processing failed",
+      details: err instanceof Error ? err.message : String(err),
+      contractId,
+    }, "Chat: unhandled exception");
     res.status(500).json({ error: "InternalError", message: "Chat failed. Please try again." });
   }
 });
@@ -133,7 +138,12 @@ router.get("/:contractId", requireAuth, async (req: AuthenticatedRequest, res: R
 
     res.json(messages);
   } catch (err) {
-    req.log.error({ err }, "Get chat history error");
+    req.log.error({
+      error: true, source: "SYSTEM",
+      message: "Failed to retrieve chat history",
+      details: err instanceof Error ? err.message : String(err),
+      contractId,
+    }, "Chat history: unhandled exception");
     res.status(500).json({ error: "InternalError", message: "Failed to get chat history" });
   }
 });

@@ -292,10 +292,16 @@ router.get("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response)
       .where(eq(analysesTable.contractId, id))
       .limit(1);
 
+    // PRIVACY: Never return raw extracted text to the client — only structured analysis results
     res.json({
-      ...contract,
+      id: contract.id,
+      userId: contract.userId,
+      filename: contract.filename,
+      fileSize: contract.fileSize,
+      status: contract.status,
+      createdAt: contract.createdAt,
+      analyzedAt: contract.analyzedAt,
       analysis: analyses[0] ?? null,
-      extractedText: contract.extractedText ?? null,
     });
   } catch (err) {
     req.log.error({ error: true, source: "SYSTEM", details: err instanceof Error ? err.message : String(err) }, "Get contract error");

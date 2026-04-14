@@ -120,7 +120,13 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
       <main className="flex-1 overflow-auto md:pt-0 pt-14">
         {children}
         <footer className="px-6 py-4 border-t border-border mt-8">
-          <p className="text-xs text-muted-foreground text-center">© 2026 ContractAI. All rights reserved.</p>
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span>© 2026 ContractAI</span>
+            <span>·</span>
+            <button onClick={() => setLocation("/privacy")} className="hover:text-foreground transition-colors underline underline-offset-2">
+              Privacy Policy
+            </button>
+          </div>
         </footer>
       </main>
     </div>

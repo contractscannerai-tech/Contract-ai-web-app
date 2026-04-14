@@ -280,8 +280,9 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       riskLevel,
     }).returning();
 
+    // PRIVACY: Clear extracted text immediately after AI analysis — never retain full document content
     await db.update(contractsTable)
-      .set({ status: "analyzed", analyzedAt: new Date() })
+      .set({ status: "analyzed", analyzedAt: new Date(), extractedText: null })
       .where(eq(contractsTable.id, id));
 
     await db.update(usersTable)
@@ -291,7 +292,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
     req.log.info({
       source: "AI", contractId: id, riskLevel, analysisId,
       plan: user.plan, creditsUsed: user.contractsUsed + 1,
-    }, "AI: analysis complete — credit charged");
+    }, "AI: analysis complete — extracted text purged, credit charged");
 
     res.json(analysis);
   } catch (err) {
