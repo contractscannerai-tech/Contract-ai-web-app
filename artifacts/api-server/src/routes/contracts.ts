@@ -1,6 +1,9 @@
 import { Router } from "express";
 import type { Response } from "express";
 import multer from "multer";
+// Import the underlying library directly to avoid pdf-parse@1.1.1's
+// import-time test-file read (known bug when run outside its own directory)
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { v4 as uuidv4 } from "uuid";
 import { db, contractsTable, analysesTable, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
@@ -39,26 +42,29 @@ const PLAN_LIMITS: Record<string, number> = {
   premium: 999,
 };
 
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  const data = await pdfParse(buffer);
+  const text = (data.text ?? "").trim();
+  if (!text) {
+    throw new Error("PDF text extraction returned empty content — the PDF may be scanned/image-only. Try uploading a photo of it instead (Pro/Premium).");
+  }
+  return text;
+}
+
 async function extractTextWithOCR(
   buffer: Buffer,
   filename: string,
   mimetype: string
 ): Promise<string> {
   const ocrApiKey = process.env["OCR_API_KEY"];
-  if (!ocrApiKey) {
-    throw new Error("OCR_API_KEY is not configured");
-  }
+  if (!ocrApiKey) throw new Error("OCR_API_KEY is not configured");
 
-  const isImage = mimetype.startsWith("image/");
   const formData = new FormData();
   const blob = new Blob([buffer], { type: mimetype });
   formData.append("file", blob, filename);
   formData.append("apikey", ocrApiKey);
   formData.append("language", "eng");
   formData.append("isOverlayRequired", "false");
-  if (!isImage) {
-    formData.append("filetype", "PDF");
-  }
   formData.append("detectOrientation", "true");
   formData.append("scale", "true");
   formData.append("isTable", "false");
@@ -70,25 +76,26 @@ async function extractTextWithOCR(
       const response = await fetch("https://api.ocr.space/parse/image", {
         method: "POST",
         body: formData,
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
         throw new Error(`OCR API HTTP ${response.status}: ${await response.text().catch(() => "(unreadable)")}`);
       }
 
-      const data = await response.json() as {
+      const result = await response.json() as {
         IsErroredOnProcessing?: boolean;
         ErrorMessage?: string[];
         ParsedResults?: Array<{ ParsedText: string }>;
       };
 
-      if (data.IsErroredOnProcessing) {
-        throw new Error(`OCR processing error: ${data.ErrorMessage?.join(", ") ?? "unknown"}`);
+      if (result.IsErroredOnProcessing) {
+        throw new Error(`OCR processing error: ${result.ErrorMessage?.join(", ") ?? "unknown"}`);
       }
 
-      const text = data.ParsedResults?.map((r) => r.ParsedText).join("\n") ?? "";
+      const text = result.ParsedResults?.map((r) => r.ParsedText).join("\n") ?? "";
       if (!text.trim()) {
-        throw new Error("OCR returned empty text — file may be image-only, scanned at low quality, or password protected");
+        throw new Error("OCR returned empty text — image may be low quality, blurry, or password-protected");
       }
 
       return text;
@@ -101,6 +108,24 @@ async function extractTextWithOCR(
   }
 
   throw lastError ?? new Error("OCR failed after 3 attempts");
+}
+
+type ExtractionResult = {
+  text: string;
+  method: "pdf-parse" | "ocr";
+};
+
+async function extractText(
+  buffer: Buffer,
+  filename: string,
+  mimetype: string
+): Promise<ExtractionResult> {
+  if (mimetype === "application/pdf") {
+    const text = await extractTextFromPDF(buffer);
+    return { text, method: "pdf-parse" };
+  }
+  const text = await extractTextWithOCR(buffer, filename, mimetype);
+  return { text, method: "ocr" };
 }
 
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -179,32 +204,43 @@ router.post("/upload", requireAuth, uploadLimiter, (req: AuthenticatedRequest, r
       }
 
       const contractId = uuidv4();
+      const isPDF = mimetype === "application/pdf";
+      const source = isPDF ? "PDF" : "OCR";
 
       req.log.info({
-        source: "OCR",
+        source,
         contractId,
         filename: originalname,
         mimetype,
         size,
-      }, "OCR: starting text extraction at upload time");
+        method: isPDF ? "pdf-parse" : "ocr",
+      }, isPDF ? "PDF: extracting digital text directly" : "OCR: scanning image for text");
 
       let extractedText: string | null = null;
       let initialStatus: "extracted" | "failed" = "extracted";
+      let processingMethod: "pdf-parse" | "ocr" = isPDF ? "pdf-parse" : "ocr";
 
       try {
-        extractedText = await extractTextWithOCR(buffer, originalname, mimetype);
-        req.log.info({ source: "OCR", contractId, charCount: extractedText.length }, "OCR: extraction successful");
-      } catch (ocrErr) {
-        const errMsg = ocrErr instanceof Error ? ocrErr.message : String(ocrErr);
+        const result = await extractText(buffer, originalname, mimetype);
+        extractedText = result.text;
+        processingMethod = result.method;
+        req.log.info({
+          source,
+          contractId,
+          method: result.method,
+          charCount: extractedText.length,
+        }, isPDF ? "PDF: text extracted successfully" : "OCR: scan completed successfully");
+      } catch (extractErr) {
+        const errMsg = extractErr instanceof Error ? extractErr.message : String(extractErr);
         req.log.error({
           error: true,
-          source: "OCR",
-          message: "OCR extraction failed at upload time",
+          source,
+          message: isPDF ? "PDF text extraction failed" : "OCR extraction failed",
           details: errMsg,
           contractId,
           filename: originalname,
           mimetype,
-        }, "OCR: extraction failed");
+        }, isPDF ? "PDF: extraction failed" : "OCR: extraction failed");
         initialStatus = "failed";
       }
 
@@ -217,9 +253,15 @@ router.post("/upload", requireAuth, uploadLimiter, (req: AuthenticatedRequest, r
         extractedText,
       }).returning();
 
-      req.log.info({ source: "SYSTEM", contractId, filename: originalname, status: initialStatus }, "Contract uploaded — credit will be charged after successful AI analysis");
+      req.log.info({
+        source: "SYSTEM",
+        contractId,
+        filename: originalname,
+        status: initialStatus,
+        method: processingMethod,
+      }, "Contract stored — credit charged only after successful AI analysis");
 
-      res.json(contract);
+      res.json({ ...contract, processingMethod });
     } catch (dbErr) {
       const errMsg = dbErr instanceof Error ? dbErr.message : String(dbErr);
       req.log.error({ error: true, source: "SYSTEM", message: "DB error during upload", details: errMsg }, "Upload DB error");

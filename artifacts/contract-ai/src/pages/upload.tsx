@@ -395,9 +395,13 @@ export default function UploadPage() {
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">Uploading and extracting text…</p>
+                <p className="text-sm font-medium">
+                  {isImage ? "Running OCR scan…" : "Extracting digital text…"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Running OCR on your {isImage ? "image" : "PDF"} · {uploadProgress}%
+                  {isImage
+                    ? `Sending image to OCR engine · ${uploadProgress}%`
+                    : `Parsing PDF directly — no OCR needed · ${uploadProgress}%`}
                 </p>
               </div>
             </div>
@@ -414,7 +418,9 @@ export default function UploadPage() {
           <div className="mt-4 flex items-center gap-3 bg-green-500/8 border border-green-500/20 rounded-lg px-4 py-3" data-testid="status-ready">
             <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-700">Upload complete — text extracted successfully</p>
+              <p className="text-sm font-medium text-green-700">
+                {isImage ? "OCR scan complete" : "Digital text extracted"} — ready for AI analysis
+              </p>
               <p className="text-xs text-muted-foreground">Click Analyze below to run the AI review</p>
             </div>
           </div>
