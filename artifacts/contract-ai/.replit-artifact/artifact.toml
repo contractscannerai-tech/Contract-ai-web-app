@@ -17,6 +17,15 @@ localPort = 22926
 [services.development]
 run = "pnpm --filter @workspace/contract-ai run dev"
 
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/contract-ai", "run", "build" ]
+publicDir = "artifacts/contract-ai/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
 [services.env]
 PORT = "22926"
 BASE_PATH = "/"
