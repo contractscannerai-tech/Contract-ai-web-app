@@ -1,0 +1,58 @@
+🚀 REPLIT AGENT PROMPT (COMPLIANT USER AGREEMENT SYSTEM)
+You are building a production-ready SaaS app called ContractAI.
+Implement a mandatory User Agreement acceptance system for all new users during sign-up.
+📜 1. USER AGREEMENT IMPLEMENTATION (REQUIRED)
+Create a dedicated full-screen Terms of Service page that appears ONLY during sign-up (new account creation).
+RULES:
+Must appear before account creation
+Must NOT appear during login
+Must be accepted once per user only
+Must be stored in database as:
+terms_accepted: true
+terms_accepted_at: timestamp
+📄 2. USER AGREEMENT CONTENT (SINGLE PARAGRAPH FORMAT REQUIRED)
+Display the full Terms of Service as ONE continuous long paragraph block (not bullet points) styled in plain black text on white background, scrollable.
+⚠️ IMPORTANT:
+It must be readable but dense
+Must contain ALL legal content below merged into one paragraph
+No bullets, no sections, no formatting breaks except spacing
+Must feel like a full legal document paragraph
+CONTENT TO INCLUDE (MERGED INTO ONE PARAGRAPH):
+ContractAI provides AI-powered contract analysis for informational purposes only and does not provide legal advice and is not a law firm and does not replace professional legal services and users acknowledge that AI-generated outputs may be inaccurate incomplete or outdated and users are solely responsible for any decisions made using the platform and uploaded documents such as PDF contracts and images are temporarily processed for AI and OCR analysis and may be sent to third-party services including AI APIs OCR systems authentication services and payment processors solely for functionality purposes and all uploaded files are automatically deleted after processing and analysis is completed and we do not permanently store raw document content and we only store limited user data such as account credentials and contract analysis results while user account exists and users may delete their account at any time which removes their stored data and we do not sell or share personal data except as required for processing through third-party services and we use secure authentication systems and encrypted data handling via Supabase and IP-based location data may be used only for payment tax calculation purposes and is not stored or used for tracking and we are not liable for any damages financial losses or legal consequences resulting from use of the platform and users must not misuse the platform for illegal activities and accounts may be suspended for abuse and by continuing users acknowledge full acceptance of these terms.
+🧾 3. UI REQUIREMENTS
+Create a clean compliance screen:
+White background
+Black text
+One large scrollable text container
+No marketing styling
+No emojis
+No distractions
+☑️ 4. ACCEPTANCE FLOW
+Add:
+Checkbox: “I have read and agree to the Terms of Service”
+Button: “Agree & Continue”
+RULES:
+Button disabled until checkbox is checked
+Cannot proceed without acceptance
+🔁 5. SIGN-UP LOGIC
+User clicks “Create Account”
+Redirect to Terms page FIRST
+After acceptance → show sign-up form
+After successful sign-up → go to dashboard
+🔐 6. LOGIN FLOW
+Login flow must NOT show Terms page
+Existing users go directly to login → dashboard
+🧠 7. ONE-TIME ENFORCEMENT
+If terms_accepted = true, never show Terms page again
+Enforce this in BOTH frontend and backend
+🎨 8. UI CLARITY FIX
+Fix authentication labels:
+“Login” = existing users
+“Create New Account” = new users
+No confusion between sign-in and sign-up.
+⚙️ 9. BACKEND ENFORCEMENT
+Block account creation unless terms are accepted
+Store acceptance timestamp securely
+Prevent bypass via API or frontend manipulation
+🚨 FINAL REQUIREMENT
+This system is required for legal compliance and platform store approval. It must be fully functional, secure, and non-bypassable.

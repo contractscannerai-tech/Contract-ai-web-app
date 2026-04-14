@@ -13,6 +13,7 @@ import ContractDetailPage from "@/pages/contract-detail";
 import PricingPage from "@/pages/pricing";
 import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
+import TermsPage from "@/pages/terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/pricing" component={PricingPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
       <Route component={NotFound} />
     </Switch>
   );

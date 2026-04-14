@@ -19,9 +19,15 @@ function structuredError(source: string, message: string, details: string) {
 }
 
 router.post("/signup", async (req, res: Response): Promise<void> => {
-  const { email, password } = req.body as { email?: string; password?: string };
+  const { email, password, termsAccepted } = req.body as { email?: string; password?: string; termsAccepted?: boolean };
   if (!email || !password) {
     res.status(400).json(structuredError("AUTH", "Email and password are required", "Missing email or password field in request body"));
+    return;
+  }
+
+  // LEGAL COMPLIANCE: Terms of Service acceptance is mandatory before account creation
+  if (termsAccepted !== true) {
+    res.status(400).json(structuredError("AUTH", "You must accept the Terms of Service before creating an account.", "termsAccepted must be true"));
     return;
   }
 
@@ -51,6 +57,8 @@ router.post("/signup", async (req, res: Response): Promise<void> => {
           email: data.user.email ?? email,
           plan: "free",
           contractsUsed: 0,
+          termsAccepted: true,
+          termsAcceptedAt: new Date(),
         }).onConflictDoNothing();
       } catch (dbErr) {
         req.log.warn({

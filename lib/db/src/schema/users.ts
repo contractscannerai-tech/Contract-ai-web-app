@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,6 +9,8 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   plan: planEnum("plan").notNull().default("free"),
   contractsUsed: integer("contracts_used").notNull().default(0),
+  termsAccepted: boolean("terms_accepted").notNull().default(false),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

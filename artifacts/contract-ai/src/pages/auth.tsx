@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Eye, EyeOff, Loader2 } from "lucide-react";
+import { FileText, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { login, signup } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -21,37 +21,73 @@ function GoogleIcon() {
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+
+  const params = new URLSearchParams(search);
+  const isSignupFlow = params.get("signup") === "1";
+
+  // Verify the terms were actually accepted (within the last 30 minutes) before allowing signup
+  const termsTimestamp = sessionStorage.getItem("contractai_terms_ts");
+  const termsValid = termsTimestamp ? Date.now() - parseInt(termsTimestamp) < 30 * 60 * 1000 : false;
+
+  // Default: login. If ?signup=1 AND terms were accepted in session, show signup form.
+  const [mode, setMode] = useState<"login" | "signup">(
+    isSignupFlow && termsValid ? "signup" : "login"
+  );
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // If signup param is set but terms aren't valid, redirect to terms page
+  useEffect(() => {
+    if (isSignupFlow && !termsValid) {
+      setLocation("/terms");
+    }
+  }, [isSignupFlow, termsValid, setLocation]);
+
+  function handleCreateAccount() {
+    setLocation("/terms");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !password) return;
-    if (password.length < 8) {
+    if (mode === "signup" && password.length < 8) {
       toast({ title: "Password too short", description: "Password must be at least 8 characters.", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      const result = mode === "login" ? await login(email, password) : await signup(email, password);
-      if (result.success) {
-        toast({ title: mode === "login" ? "Welcome back!" : "Account created!", description: "Redirecting to your dashboard..." });
-        setTimeout(() => setLocation("/dashboard"), 800);
+      if (mode === "login") {
+        const result = await login(email, password);
+        if (result.success) {
+          toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
+          setTimeout(() => setLocation("/dashboard"), 600);
+        } else {
+          toast({ title: "Sign in failed", description: result.error ?? "Invalid email or password", variant: "destructive" });
+        }
       } else {
-        toast({ title: "Error", description: result.error ?? "Something went wrong", variant: "destructive" });
+        // Signup — terms have already been verified by the flow
+        const result = await signup(email, password, true);
+        if (result.success) {
+          sessionStorage.removeItem("contractai_terms_ts");
+          toast({ title: "Account created!", description: "Welcome to ContractAI. Redirecting to your dashboard..." });
+          setTimeout(() => setLocation("/dashboard"), 800);
+        } else {
+          toast({ title: "Signup failed", description: result.error ?? "Something went wrong", variant: "destructive" });
+        }
       }
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogleLogin() {
+  async function handleGoogleAuth() {
     setGoogleLoading(true);
     try {
       await supabase.auth.signInWithOAuth({
@@ -66,6 +102,123 @@ export default function AuthPage() {
     }
   }
 
+  // ─── LOGIN view ───────────────────────────────────────────────────────────
+  if (mode === "login") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <nav className="flex items-center justify-between px-6 h-16 border-b border-border">
+          <button onClick={() => setLocation("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-logo">
+            <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+              <FileText className="w-3.5 h-3.5 text-primary-foreground" />
+            </div>
+            <span className="font-bold tracking-tight">ContractAI</span>
+          </button>
+        </nav>
+
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold tracking-tight mb-2">Sign in</h1>
+              <p className="text-sm text-muted-foreground">Sign in to your existing ContractAI account</p>
+            </div>
+
+            <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 space-y-5">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex items-center gap-3 font-medium"
+                onClick={handleGoogleAuth}
+                disabled={googleLoading || loading}
+                data-testid="button-google-auth"
+              >
+                {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+                Continue with Google
+              </Button>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex-1 h-px bg-border" />
+                <span>or sign in with email</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    data-testid="input-email"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="pr-10"
+                      data-testid="input-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading || googleLoading} data-testid="button-submit-auth">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Sign in
+                </Button>
+              </form>
+            </div>
+
+            {/* Separator between login and create account */}
+            <div className="mt-6 border border-border rounded-xl p-5 text-center bg-card/50">
+              <p className="text-sm font-medium mb-1">New to ContractAI?</p>
+              <p className="text-xs text-muted-foreground mb-4">Create a free account — no credit card required</p>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleCreateAccount}
+                data-testid="button-create-account"
+              >
+                Create New Account
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              By continuing, you acknowledge our{" "}
+              <button onClick={() => setLocation("/privacy")} className="underline hover:text-foreground transition-colors">
+                Privacy Policy
+              </button>
+              .
+            </p>
+          </div>
+        </div>
+
+        <footer className="py-5 border-t border-border text-center">
+          <p className="text-xs text-muted-foreground">© 2026 ContractAI. All rights reserved.</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // ─── SIGNUP view (only reachable after terms acceptance) ─────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <nav className="flex items-center justify-between px-6 h-16 border-b border-border">
@@ -80,37 +233,32 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold tracking-tight mb-2">
-              {mode === "login" ? "Welcome back" : "Create your account"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {mode === "login" ? "Sign in to continue analyzing contracts" : "Start understanding contracts clearly today"}
-            </p>
+            <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-700 border border-green-500/20 rounded-full px-3 py-1 text-xs font-medium mb-4">
+              Terms of Service accepted
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight mb-2">Create New Account</h1>
+            <p className="text-sm text-muted-foreground">Choose your sign-up method below</p>
           </div>
 
           <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 space-y-5">
-            {/* Google OAuth */}
             <Button
               type="button"
               variant="outline"
               className="w-full flex items-center gap-3 font-medium"
-              onClick={handleGoogleLogin}
+              onClick={handleGoogleAuth}
               disabled={googleLoading || loading}
               data-testid="button-google-auth"
             >
-              {googleLoading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <GoogleIcon />}
-              Continue with Google
+              {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+              Sign up with Google
             </Button>
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex-1 h-px bg-border" />
-              <span>or</span>
+              <span>or create with email</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* Email + password */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -131,11 +279,11 @@ export default function AuthPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder={mode === "signup" ? "Minimum 8 characters" : "Your password"}
+                    placeholder="Minimum 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    autoComplete="new-password"
                     className="pr-10"
                     data-testid="input-password"
                   />
@@ -151,29 +299,25 @@ export default function AuthPage() {
               </div>
               <Button type="submit" className="w-full" disabled={loading || googleLoading} data-testid="button-submit-auth">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {mode === "login" ? "Sign in with email" : "Create account"}
+                Create account
               </Button>
             </form>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
+            Already have an account?{" "}
             <button
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              onClick={() => setLocation("/auth")}
               className="text-primary font-medium hover:underline"
               data-testid="button-switch-mode"
             >
-              {mode === "login" ? "Sign up free" : "Sign in"}
+              Sign in
             </button>
-          </p>
-
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>
       </div>
 
-      <footer className="py-6 border-t border-border text-center">
+      <footer className="py-5 border-t border-border text-center">
         <p className="text-xs text-muted-foreground">© 2026 ContractAI. All rights reserved.</p>
       </footer>
     </div>

@@ -22,10 +22,10 @@ export async function login(email: string, password: string): Promise<{ success:
   return { success: true };
 }
 
-export async function signup(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+export async function signup(email: string, password: string, termsAccepted = true): Promise<{ success: boolean; error?: string }> {
   const res = await apiRequest("/api/auth/signup", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, termsAccepted }),
   });
   const data = await res.json() as { success?: boolean; message?: string; error?: string };
   if (!res.ok) return { success: false, error: data.message ?? data.error ?? "Signup failed" };
