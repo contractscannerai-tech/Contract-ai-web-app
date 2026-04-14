@@ -1,0 +1,116 @@
+You are building a production-grade SaaS application called ContractAI.
+Your task is to improve:
+Authentication UI consistency
+Error messaging UX
+Full security hardening across the app (frontend + backend)
+This is a critical production security upgrade.
+🔐 1. AUTHENTICATION UI STANDARDIZATION (GLOBAL)
+LOGIN LABELS
+Replace ALL instances of:
+“Sign In”
+“Signin”
+“Sign-in”
+WITH:
+“Login”
+REGISTER LABELS
+Replace ALL instances of:
+“Sign Up”
+“Signup”
+WITH:
+“Register” (form titles)
+“Create New Account” (primary button)
+FINAL RULE
+Login = existing users
+Register / Create New Account = new users
+Must be consistent across ALL pages, components, and flows.
+🎨 2. ERROR HANDLING UX IMPROVEMENT (GLOBAL)
+Remove all generic errors like:
+“Error”
+“Something went wrong”
+REQUIRED ERROR FORMAT (ALL SYSTEMS)
+Every error must show:
+What happened
+Why it happened
+What user should do next
+AUTH ERROR EXAMPLES:
+Wrong password:
+“Incorrect password. Please try again.”
+Account not found:
+“No account exists with this email. Please register a new account.”
+Invalid credentials:
+“The credentials entered do not match any account in our system.”
+Google login failure:
+“Google login failed. Please try again or use email/password login.”
+RULE:
+No red generic popups without explanation.
+🔐 3. SECURITY HARDENING (CRITICAL REQUIREMENTS)
+3.1 PASSWORD SECURITY
+ALL passwords MUST be hashed before storage
+Use strong hashing algorithm (e.g. bcrypt or Supabase Auth default secure hashing)
+Never store plain text passwords anywhere in the system
+3.2 AUTH SECURITY
+Use Supabase secure authentication only
+Enable session-based authentication
+Implement secure session persistence
+Auto-expire invalid sessions
+3.3 API SECURITY
+Backend must validate ALL requests
+No direct frontend access to external APIs
+Use server-side API keys only
+Never expose:
+GROQ API key
+OCR API key
+DODO API key
+3.4 DATA ENCRYPTION
+Encrypt sensitive data at rest (handled via Supabase secure DB)
+Use HTTPS for all communication
+Ensure secure transport layer (TLS)
+3.5 FILE SECURITY (UPLOAD SYSTEM)
+Validate file type (PDF/images only)
+Limit file size (max 10MB)
+Sanitize uploaded filenames
+Delete files after processing (within 30 seconds)
+3.6 SESSION SECURITY
+Store session tokens securely
+Prevent session hijacking
+Auto logout on token expiry or invalid session
+3.7 LOGGING SECURITY RULES
+Logs MUST:
+Show errors clearly (structured JSON)
+NEVER include:
+passwords
+full contracts
+personal user data
+API keys
+REQUIRED LOG FORMAT:
+{ "error": true, "message": "Human-readable explanation", "details": "Technical error", "source": "AUTH | AI | OCR | PAYMENT | SYSTEM" }
+3.8 ROLE OF FRONTEND
+Frontend MUST NOT call external APIs directly
+All sensitive operations go through backend only
+3.9 RATE LIMITING (ANTI-ABUSE)
+Implement:
+Request rate limiting on auth endpoints
+Upload limits per user
+AI request throttling protection
+3.10 THIRD-PARTY SECURITY AWARENESS
+System uses:
+Supabase (auth + DB)
+GROQ API (AI processing)
+OCR API (image processing)
+Dodo Payments (billing)
+Ensure:
+Only required data is shared
+No unnecessary data exposure
+🧠 4. SYSTEM BEHAVIOR RULE
+If any security rule conflicts with functionality:
+👉 PRIORITIZE SECURITY OVER FUNCTIONALITY
+🎯 5. UX SAFETY PRINCIPLES
+Errors should guide users, not scare them
+No vague system failures
+No hidden authentication states
+No silent failures
+🚨 FINAL REQUIREMENT
+This is a production SaaS application handling sensitive user documents.
+All authentication, data handling, and API usage must be secure, encrypted, and compliant with modern SaaS security standards.
+✅ END OF INSTRUCTION
+Apply all changes globally across frontend and backend with no exceptions.

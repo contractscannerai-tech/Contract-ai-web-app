@@ -18,7 +18,7 @@ import AppLayout from "@/components/layout";
 import { RiskSpeedometer } from "@/components/risk-speedometer";
 
 function extractErrorMessage(err: unknown): string {
-  if (!err) return "Something went wrong. Please try again.";
+  if (!err) return "The request could not be completed. Please refresh the page and try again.";
   if (err instanceof Error) return err.message;
   if (typeof err === "object" && err !== null) {
     const e = err as Record<string, unknown>;

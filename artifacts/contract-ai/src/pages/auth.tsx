@@ -69,7 +69,8 @@ export default function AuthPage() {
           toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
           setTimeout(() => setLocation("/dashboard"), 600);
         } else {
-          toast({ title: "Sign in failed", description: result.error ?? "Invalid email or password", variant: "destructive" });
+          const msg = friendlyAuthError(result.error, "login");
+          toast({ title: "Login failed", description: msg, variant: "destructive" });
         }
       } else {
         // Signup — terms have already been verified by the flow
@@ -79,12 +80,44 @@ export default function AuthPage() {
           toast({ title: "Account created!", description: "Welcome to ContractAI. Redirecting to your dashboard..." });
           setTimeout(() => setLocation("/dashboard"), 800);
         } else {
-          toast({ title: "Signup failed", description: result.error ?? "Something went wrong", variant: "destructive" });
+          const msg = friendlyAuthError(result.error, "signup");
+          toast({ title: "Registration failed", description: msg, variant: "destructive" });
         }
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  function friendlyAuthError(raw: string | undefined, flow: "login" | "signup"): string {
+    if (!raw) {
+      return flow === "login"
+        ? "Login failed. Please check your credentials and try again."
+        : "Registration failed. Please try again.";
+    }
+    const lower = raw.toLowerCase();
+    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials") || lower.includes("wrong password")) {
+      return "Incorrect password. Please check your password and try again.";
+    }
+    if (lower.includes("user not found") || lower.includes("no account") || lower.includes("email not found")) {
+      return "No account exists with this email address. Please register a new account.";
+    }
+    if (lower.includes("email already") || lower.includes("already registered") || lower.includes("already exists") || lower.includes("duplicate")) {
+      return "An account already exists with this email. Please login instead.";
+    }
+    if (lower.includes("email not confirmed") || lower.includes("email confirmation")) {
+      return "Your email has not been confirmed. Please check your inbox for a confirmation link.";
+    }
+    if (lower.includes("too many") || lower.includes("rate limit")) {
+      return "Too many attempts. Please wait a few minutes before trying again.";
+    }
+    if (lower.includes("password") && lower.includes("weak")) {
+      return "Password is too weak. Please choose a password with at least 8 characters, including numbers and letters.";
+    }
+    if (lower.includes("terms") || lower.includes("terms of service")) {
+      return "You must accept the Terms of Service before creating an account.";
+    }
+    return raw;
   }
 
   async function handleGoogleAuth() {
@@ -118,8 +151,8 @@ export default function AuthPage() {
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="w-full max-w-sm">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold tracking-tight mb-2">Sign in</h1>
-              <p className="text-sm text-muted-foreground">Sign in to your existing ContractAI account</p>
+              <h1 className="text-2xl font-bold tracking-tight mb-2">Login</h1>
+              <p className="text-sm text-muted-foreground">Login to your existing ContractAI account</p>
             </div>
 
             <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 space-y-5">
@@ -181,7 +214,7 @@ export default function AuthPage() {
                 </div>
                 <Button type="submit" className="w-full" disabled={loading || googleLoading} data-testid="button-submit-auth">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Sign in
+                  Login
                 </Button>
               </form>
             </div>
@@ -250,7 +283,7 @@ export default function AuthPage() {
               data-testid="button-google-auth"
             >
               {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
-              Sign up with Google
+              Register with Google
             </Button>
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -311,7 +344,7 @@ export default function AuthPage() {
               className="text-primary font-medium hover:underline"
               data-testid="button-switch-mode"
             >
-              Sign in
+              Login
             </button>
           </p>
         </div>

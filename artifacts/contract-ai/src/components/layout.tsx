@@ -74,7 +74,7 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
               data-testid="nav-logout"
             >
               <LogOut className="w-4 h-4" />
-              Sign out
+              Logout
             </button>
           )}
         </div>

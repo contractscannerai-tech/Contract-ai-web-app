@@ -115,6 +115,30 @@ type ExtractionResult = {
   method: "pdf-parse" | "ocr";
 };
 
+/**
+ * Sanitize an uploaded filename:
+ * - Strip directory traversal sequences
+ * - Remove non-ASCII / control characters
+ * - Replace whitespace and unsafe chars with underscores
+ * - Truncate to a safe max length
+ */
+function sanitizeFilename(raw: string): string {
+  // Remove any directory components
+  const basename = raw.replace(/^.*[\\/]/, "");
+  // Strip null bytes and control characters
+  const noCtrl = basename.replace(/[\x00-\x1f\x7f]/g, "");
+  // Replace characters that are unsafe in filenames/URLs
+  const safe = noCtrl.replace(/[^a-zA-Z0-9._\- ]/g, "_").replace(/\s+/g, "_");
+  // Collapse multiple underscores
+  const collapsed = safe.replace(/_+/g, "_").replace(/^_|_$/g, "");
+  // Preserve extension, truncate stem so total ≤ 200 chars
+  const dot = collapsed.lastIndexOf(".");
+  const ext = dot !== -1 ? collapsed.slice(dot) : "";
+  const stem = dot !== -1 ? collapsed.slice(0, dot) : collapsed;
+  const maxStem = 200 - ext.length;
+  return (stem.slice(0, maxStem) || "upload") + ext;
+}
+
 async function extractText(
   buffer: Buffer,
   filename: string,
@@ -190,7 +214,8 @@ router.post("/upload", requireAuth, uploadLimiter, (req: AuthenticatedRequest, r
         return;
       }
 
-      const { buffer, originalname, mimetype, size } = req.file;
+      const { buffer, originalname: rawFilename, mimetype, size } = req.file;
+      const originalname = sanitizeFilename(rawFilename);
 
       const isImageUpload = mimetype.startsWith("image/");
       if (isImageUpload && user.plan === "free") {

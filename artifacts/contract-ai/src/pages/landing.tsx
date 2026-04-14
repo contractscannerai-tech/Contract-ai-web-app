@@ -22,7 +22,7 @@ export default function LandingPage() {
               Pricing
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setLocation("/auth")} data-testid="link-login">
-              Sign in
+              Login
             </Button>
             <Button size="sm" onClick={() => setLocation("/auth")} data-testid="button-get-started">
               Get started
@@ -216,7 +216,7 @@ export default function LandingPage() {
           <p className="text-xs text-muted-foreground">© 2026 ContractAI. All rights reserved.</p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <button onClick={() => setLocation("/pricing")} className="hover:text-foreground transition-colors">Pricing</button>
-            <button onClick={() => setLocation("/auth")} className="hover:text-foreground transition-colors">Sign in</button>
+            <button onClick={() => setLocation("/auth")} className="hover:text-foreground transition-colors">Login</button>
           </div>
         </div>
       </footer>

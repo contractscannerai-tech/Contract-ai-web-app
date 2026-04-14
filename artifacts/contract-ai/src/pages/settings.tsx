@@ -49,7 +49,7 @@ export default function SettingsPage() {
     } catch (err) {
       toast({
         title: "Deletion failed",
-        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+        description: err instanceof Error ? err.message : "Account deletion failed due to a server error. Please try again or contact support.",
         variant: "destructive",
       });
       setDeletingAccount(false);

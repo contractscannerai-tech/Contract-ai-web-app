@@ -38,15 +38,15 @@ export default function AuthCallbackPage() {
         }
 
         if (!cancelled) {
-          toast({ title: "Signed in!", description: "Welcome to ContractAI." });
+          toast({ title: "Logged in!", description: "Welcome to ContractAI." });
           setLocation("/dashboard");
         }
       } catch (err) {
         if (!cancelled) {
-          const msg = err instanceof Error ? err.message : "Authentication failed";
+          const msg = err instanceof Error ? err.message : "Google login failed. Please try again or use email/password login.";
           setErrorMsg(msg);
           setStatus("error");
-          toast({ title: "Sign-in failed", description: msg, variant: "destructive" });
+          toast({ title: "Login failed", description: msg, variant: "destructive" });
         }
       }
     }
@@ -67,7 +67,7 @@ export default function AuthCallbackPage() {
       {status === "loading" ? (
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Completing sign-in…</p>
+          <p className="text-sm text-muted-foreground">Completing login…</p>
         </div>
       ) : (
         <div className="text-center space-y-3">
@@ -76,7 +76,7 @@ export default function AuthCallbackPage() {
             onClick={() => setLocation("/auth")}
             className="text-sm text-primary underline underline-offset-2"
           >
-            Back to sign in
+            Back to login
           </button>
         </div>
       )}
