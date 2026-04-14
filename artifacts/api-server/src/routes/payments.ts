@@ -136,7 +136,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
 
     req.log.info({ source: "PAYMENT", plan, productId, country, userId: req.userId }, "Checkout: creating Dodo subscription");
 
-    const response = await fetch("https://api.dodopayments.com/subscriptions", {
+    const response = await fetch("https://live.dodopayments.com/subscriptions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -101,7 +101,9 @@ export default function PricingPage() {
         toast({ title: "Payment error", description: "Could not create checkout session.", variant: "destructive" });
       }
     } catch (err) {
-      toast({ title: "Payment error", description: "Could not start checkout. Please try again.", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Could not start checkout. Please try again.";
+      console.error("[Checkout] Error:", msg, err);
+      toast({ title: "Payment error", description: msg, variant: "destructive" });
     } finally {
       setLoadingPlan(null);
     }

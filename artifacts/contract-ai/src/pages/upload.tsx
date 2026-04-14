@@ -1,7 +1,10 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, FileText, Image, X, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Loader2, Upload, FileText, Image, X,
+  CheckCircle, AlertCircle, Sparkles,
+} from "lucide-react";
 import { useUploadContract, useAnalyzeContract, useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -21,15 +24,19 @@ const ACCEPTED_TYPES: Record<string, string> = {
 
 const ACCEPT_ATTR = Object.keys(ACCEPTED_TYPES).join(",");
 
+type Stage = "idle" | "uploading" | "ready" | "analyzing" | "done";
+
 export default function UploadPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [stage, setStage] = useState<"idle" | "uploading" | "analyzing" | "done">("idle");
+  const [stage, setStage] = useState<Stage>("idle");
+  const [uploadedContractId, setUploadedContractId] = useState<string | null>(null);
 
   const { data: user } = useGetMe();
   const logout = useLogout();
@@ -48,78 +55,112 @@ export default function UploadPage() {
     if (!ACCEPTED_TYPES[file.type]) {
       return "Only PDF or image files (JPEG, PNG, WebP) are supported";
     }
-    if (file.size > MAX_SIZE) return `File must be under 10MB (current: ${formatFileSize(file.size)})`;
+    if (file.size > MAX_SIZE) {
+      return `File must be under 10MB (current: ${formatFileSize(file.size)})`;
+    }
     if (file.type.startsWith("image/") && isFreePlan) {
       return "Photo scanning requires a Pro or Premium plan. Please upgrade or upload a PDF instead.";
     }
     return null;
   }
 
-  function handleFileSelect(file: File) {
+  async function startUpload(file: File) {
     const error = validateFile(file);
     if (error) {
       setFileError(error);
       setSelectedFile(null);
       return;
     }
+
     setFileError(null);
     setSelectedFile(file);
-  }
-
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFileSelect(file);
-  }
-
-  function clearFile() {
-    setSelectedFile(null);
-    setFileError(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
-  const isImage = selectedFile ? selectedFile.type.startsWith("image/") : false;
-
-  async function handleAnalyze() {
-    if (!selectedFile) return;
-
+    setUploadedContractId(null);
     setStage("uploading");
+
     try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      formData.append("file", file);
 
-      const contract = await uploadContract.mutateAsync({ data: formData as unknown as { file: Blob } });
+      const contract = await uploadContract.mutateAsync({
+        data: formData as unknown as { file: Blob },
+      });
+
       queryClient.invalidateQueries();
 
       if (contract.status === "failed") {
         setStage("idle");
         toast({
           title: "Text extraction failed",
-          description: "Could not read text from this file. Please ensure it is not password-protected or corrupted.",
+          description: "Could not read text from this file. Ensure it is not password-protected or corrupted.",
           variant: "destructive",
         });
         return;
       }
 
-      setStage("analyzing");
-      await analyzeContract.mutateAsync({ id: contract.id });
+      setUploadedContractId(contract.id);
+      setStage("ready");
+    } catch (err) {
+      setStage("idle");
+      const msg = err instanceof Error ? err.message : "Upload failed. Please try again.";
+      console.error("[Upload] Error:", msg, err);
+      toast({ title: "Upload failed", description: msg, variant: "destructive" });
+    }
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void startUpload(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void startUpload(file);
+  }
+
+  function clearFile() {
+    setSelectedFile(null);
+    setFileError(null);
+    setUploadedContractId(null);
+    setStage("idle");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleAnalyze() {
+    if (!uploadedContractId || stage !== "ready") return;
+
+    const planLimits: Record<string, number> = { free: 3, pro: 50, premium: 999 };
+    const limit = planLimits[user?.plan ?? "free"] ?? 3;
+    const used = user?.contractsUsed ?? 0;
+    if (used >= limit) {
+      toast({
+        title: "Plan limit reached",
+        description: `Your ${user?.plan ?? "free"} plan allows ${limit} contracts. Please upgrade.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStage("analyzing");
+    try {
+      await analyzeContract.mutateAsync({ id: uploadedContractId });
       queryClient.invalidateQueries();
 
       setStage("done");
       toast({ title: "Analysis complete!", description: "Your contract has been analyzed." });
-      setTimeout(() => setLocation(`/contracts/${contract.id}`), 900);
+      setTimeout(() => setLocation(`/contracts/${uploadedContractId}`), 900);
     } catch (err) {
-      setStage("idle");
-      const msg = err instanceof Error ? err.message : "Upload or analysis failed";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      setStage("ready");
+      const msg = err instanceof Error ? err.message : "Analysis failed. Please try again.";
+      console.error("[Analyze] Error:", msg, err);
+      toast({ title: "Analysis failed", description: msg, variant: "destructive" });
     }
   }
+
+  const isImage = selectedFile ? selectedFile.type.startsWith("image/") : false;
+  const isBusy = stage === "uploading" || stage === "analyzing" || stage === "done";
+  const analyzeEnabled = stage === "ready" && !!uploadedContractId;
 
   return (
     <AppLayout user={user} onLogout={handleLogout}>
@@ -127,11 +168,10 @@ export default function UploadPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight mb-2">Upload Contract</h1>
           <p className="text-muted-foreground text-sm">
-            Upload a PDF or photo of a contract — we'll extract the text and analyze it instantly with AI.
+            Drop a PDF or photo — we'll extract the text automatically, then analyze it with AI when you're ready.
           </p>
         </div>
 
-        {/* Plan limit warning */}
         {user && user.plan === "free" && (
           <div className="mb-6 flex items-start gap-3 bg-yellow-500/8 border border-yellow-500/20 rounded-lg px-4 py-3">
             <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -155,19 +195,25 @@ export default function UploadPage() {
             dragOver
               ? "border-primary bg-primary/5"
               : selectedFile
-              ? "border-primary/50 bg-primary/3"
+              ? stage === "ready"
+                ? "border-green-500/60 bg-green-500/4"
+                : "border-primary/50 bg-primary/3"
               : "border-border hover:border-primary/50 hover:bg-muted/30"
-          } ${stage !== "idle" ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          } ${isBusy ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+          onDragOver={(e) => { e.preventDefault(); if (!isBusy) setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          onClick={() => stage === "idle" && fileInputRef.current?.click()}
+          onClick={() => !isBusy && fileInputRef.current?.click()}
           data-testid="dropzone"
         >
           {selectedFile ? (
             <div className="flex flex-col items-center gap-3">
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
-                {isImage
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                stage === "ready" ? "bg-green-500/15" : "bg-primary/10"
+              }`}>
+                {stage === "ready"
+                  ? <CheckCircle className="w-7 h-7 text-green-600" />
+                  : isImage
                   ? <Image className="w-7 h-7 text-primary" />
                   : <FileText className="w-7 h-7 text-primary" />}
               </div>
@@ -175,9 +221,12 @@ export default function UploadPage() {
                 <p className="font-medium text-sm">{selectedFile.name}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {ACCEPTED_TYPES[selectedFile.type] ?? "File"} · {formatFileSize(selectedFile.size)}
+                  {stage === "ready" && (
+                    <span className="text-green-600 font-medium"> · Ready to analyze</span>
+                  )}
                 </p>
               </div>
-              {stage === "idle" && (
+              {!isBusy && (
                 <button
                   onClick={(e) => { e.stopPropagation(); clearFile(); }}
                   className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
@@ -214,7 +263,6 @@ export default function UploadPage() {
           )}
         </div>
 
-        {/* Hidden file input — anchored with useRef to persist on mobile */}
         <input
           ref={fileInputRef}
           type="file"
@@ -224,7 +272,6 @@ export default function UploadPage() {
           data-testid="input-file"
         />
 
-        {/* File error */}
         {fileError && (
           <div className="mt-3 flex items-center gap-2 text-sm text-destructive" data-testid="text-file-error">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -232,7 +279,6 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Status messages */}
         {stage === "uploading" && (
           <div className="mt-4 flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3" data-testid="status-uploading">
             <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -242,6 +288,17 @@ export default function UploadPage() {
             </div>
           </div>
         )}
+
+        {stage === "ready" && (
+          <div className="mt-4 flex items-center gap-3 bg-green-500/8 border border-green-500/20 rounded-lg px-4 py-3" data-testid="status-ready">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <div>
+              <p className="text-sm font-medium text-green-700">Upload complete — text extracted</p>
+              <p className="text-xs text-muted-foreground">Click Analyze below to run the AI review</p>
+            </div>
+          </div>
+        )}
+
         {stage === "analyzing" && (
           <div className="mt-4 flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3" data-testid="status-analyzing">
             <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -251,6 +308,7 @@ export default function UploadPage() {
             </div>
           </div>
         )}
+
         {stage === "done" && (
           <div className="mt-4 flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3" data-testid="status-done">
             <CheckCircle className="w-4 h-4 text-green-600" />
@@ -261,23 +319,28 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Analyze button — disabled until a file is selected */}
+        {/* Analyze button — only active once file is uploaded and server confirms ready */}
         <Button
           size="lg"
-          className="w-full mt-6 gap-2"
-          disabled={!selectedFile || stage !== "idle"}
+          className={`w-full mt-6 gap-2 transition-opacity duration-300 ${analyzeEnabled ? "opacity-100" : "opacity-40"}`}
+          disabled={!analyzeEnabled}
           onClick={handleAnalyze}
           data-testid="button-analyze"
         >
-          {stage !== "idle" ? (
+          {stage === "analyzing" || stage === "done" ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              {stage === "uploading" ? "Uploading…" : stage === "analyzing" ? "Analyzing…" : "Redirecting…"}
+              {stage === "analyzing" ? "Analyzing…" : "Redirecting…"}
+            </>
+          ) : stage === "uploading" ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Uploading…
             </>
           ) : (
             <>
-              <FileText className="w-4 h-4" />
-              {selectedFile ? "Analyze contract" : "Select a file to analyze"}
+              <Sparkles className="w-4 h-4" />
+              {analyzeEnabled ? "Analyze contract" : "Select a file to get started"}
             </>
           )}
         </Button>
