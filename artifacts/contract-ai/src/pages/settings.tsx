@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   LogOut, Crown, User, FileText, Trash2, Shield,
-  AlertTriangle, Loader2, ExternalLink,
+  AlertTriangle, Loader2, ExternalLink, Sun, Moon,
+  Globe, Gift, Copy, Check,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
+import { useI18n, LANGUAGES, type LangCode } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -24,15 +27,33 @@ export default function SettingsPage() {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
   const { toast } = useToast();
+  const { lang, setLang, t } = useI18n();
+  const { theme, setTheme } = useTheme();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
+  const [referralData, setReferralData] = useState<{
+    referralCode: string;
+    totalReferrals: number;
+    totalScansAwarded: number;
+  } | null>(null);
+  const [referralInput, setReferralInput] = useState("");
+  const [claimingReferral, setClaimingReferral] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/referrals/code", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setReferralData(data as typeof referralData))
+      .catch(() => {});
+  }, []);
+
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   async function handleDeleteAccount() {
@@ -56,16 +77,49 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleClaimReferral() {
+    if (!referralInput.trim()) return;
+    setClaimingReferral(true);
+    try {
+      const res = await fetch("/api/referrals/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ referralCode: referralInput.trim() }),
+      });
+      const data = await res.json() as { message?: string };
+      if (!res.ok) throw new Error(data.message ?? "Failed to apply referral code");
+      toast({ title: "Referral applied", description: data.message });
+      setReferralInput("");
+      queryClient.invalidateQueries({ queryKey: ["getMe"] });
+    } catch (err) {
+      toast({
+        title: "Referral failed",
+        description: err instanceof Error ? err.message : "Could not apply referral code",
+        variant: "destructive",
+      });
+    } finally {
+      setClaimingReferral(false);
+    }
+  }
+
+  function copyReferralCode() {
+    if (referralData?.referralCode) {
+      navigator.clipboard.writeText(referralData.referralCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
   const badge = planBadge[user?.plan ?? "free"];
 
   return (
     <AppLayout user={user} onLogout={handleLogout}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-2xl font-bold tracking-tight mb-8">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-8">{t("settings.title")}</h1>
 
-        {/* Account info */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.account")}</h2>
           {isLoading ? (
             <div className="space-y-3"><Skeleton className="h-10" /><Skeleton className="h-10" /></div>
           ) : user ? (
@@ -86,9 +140,8 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
-        {/* Plan */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Plan</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.plan")}</h2>
           {isLoading ? (
             <Skeleton className="h-16" />
           ) : user ? (
@@ -107,6 +160,7 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-sm text-muted-foreground" data-testid="text-usage">
                       {user.contractsUsed} of {user.contractsLimit === 999 ? "Unlimited" : user.contractsLimit} contracts used
+                      {(user as Record<string, unknown>).bonusScans ? ` (+${(user as Record<string, unknown>).bonusScans} bonus)` : ""}
                     </p>
                   </div>
                 </div>
@@ -123,14 +177,111 @@ export default function SettingsPage() {
               )}
               {user.plan !== "premium" && (
                 <Button variant="outline" size="sm" onClick={() => setLocation("/pricing")} className="gap-2" data-testid="button-upgrade">
-                  <Crown className="w-4 h-4" /> Upgrade plan
+                  <Crown className="w-4 h-4" /> {t("common.upgrade")}
                 </Button>
               )}
             </div>
           ) : null}
         </div>
 
-        {/* Quick Actions */}
+        <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Globe className="w-4 h-4" /> {t("settings.language")}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                  lang === l.code
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-muted"
+                }`}
+              >
+                <span>{l.flag}</span>
+                <span className="truncate">{l.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.theme")}</h2>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setTheme("light")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                theme === "light" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              <Sun className="w-4 h-4" /> {t("theme.light")}
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                theme === "dark" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              <Moon className="w-4 h-4" /> {t("theme.dark")}
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Gift className="w-4 h-4" /> {t("settings.referral")}
+          </h2>
+          {referralData ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Your referral code</p>
+                <div className="flex items-center gap-2">
+                  <code className="bg-muted px-3 py-2 rounded-lg text-sm font-mono flex-1">{referralData.referralCode}</code>
+                  <Button variant="outline" size="sm" onClick={copyReferralCode} className="gap-1.5">
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <p className="text-2xl font-bold">{referralData.totalReferrals}</p>
+                  <p className="text-xs text-muted-foreground">Referrals</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{referralData.totalScansAwarded}</p>
+                  <p className="text-xs text-muted-foreground">Bonus scans earned</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                <p>Share your code and earn bonus scans:</p>
+                <p>Friend signs up: +3 scans</p>
+                <p>Friend subscribes to Pro: +5 scans</p>
+                <p>Friend subscribes to Premium: +10 scans</p>
+              </div>
+            </div>
+          ) : (
+            <Skeleton className="h-20" />
+          )}
+
+          <div className="mt-5 pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground mb-2">Have a referral code?</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={referralInput}
+                onChange={(e) => setReferralInput(e.target.value)}
+                placeholder="Enter referral code"
+                className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <Button size="sm" onClick={() => void handleClaimReferral()} disabled={!referralInput.trim() || claimingReferral}>
+                {claimingReferral ? "Applying..." : "Apply"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Quick Actions</h2>
           <div className="flex flex-col gap-2">
@@ -143,7 +294,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Privacy */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Privacy & Data</h2>
           <div className="space-y-3 text-sm text-muted-foreground">
@@ -175,7 +325,6 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        {/* Session */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Session</h2>
           <Button
@@ -190,7 +339,6 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        {/* Danger Zone — Delete Account */}
         <div className="bg-card border border-destructive/20 rounded-xl p-6 shadow-sm">
           <h2 className="font-semibold text-sm text-destructive uppercase tracking-wider mb-1">Danger Zone</h2>
           <p className="text-xs text-muted-foreground mb-4">
@@ -252,7 +400,7 @@ export default function SettingsPage() {
                   data-testid="button-delete-confirm"
                 >
                   {deletingAccount ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
                   ) : (
                     <><Trash2 className="w-4 h-4" /> Permanently delete account</>
                   )}

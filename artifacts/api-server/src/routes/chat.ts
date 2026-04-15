@@ -19,7 +19,7 @@ router.post("/:contractId", requireAuth, chatLimiter, async (req: AuthenticatedR
     return;
   }
 
-  const { message } = req.body as { message?: string };
+  const { message, language } = req.body as { message?: string; language?: string };
   if (!message?.trim()) {
     res.status(400).json({ error: "BadRequest", message: "Message is required" });
     return;
@@ -58,7 +58,11 @@ router.post("/:contractId", requireAuth, chatLimiter, async (req: AuthenticatedR
       content: message,
     });
 
-    const systemPrompt = `You are ContractAI's expert legal assistant. You help users understand their contracts in plain English.
+    const LANG_NAMES: Record<string, string> = { en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ar: "Arabic", zh: "Chinese", ja: "Japanese" };
+    const langName = language && language !== "en" ? LANG_NAMES[language] ?? "" : "";
+    const langRule = langName ? `\n\nIMPORTANT: You MUST respond entirely in ${langName}.` : "";
+
+    const systemPrompt = `You are ContractAI's expert legal assistant. You help users understand their contracts in plain English.${langRule}
 
 Contract: "${contract.filename}"
 ${analysis ? `

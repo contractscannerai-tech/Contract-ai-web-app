@@ -38,7 +38,7 @@ export default function ContractsPage() {
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   async function handleDelete(id: string, e: React.MouseEvent) {

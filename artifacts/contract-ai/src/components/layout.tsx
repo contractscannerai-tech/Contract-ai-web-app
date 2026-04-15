@@ -3,20 +3,15 @@ import { FileText, LayoutDashboard, FolderOpen, Settings, Upload, CreditCard, Lo
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { SupportWidget } from "@/components/support-widget";
 
 interface AppLayoutProps {
   children: React.ReactNode;
   user?: { email: string; plan: string; contractsUsed: number; contractsLimit: number } | null;
   onLogout?: () => void;
 }
-
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-  { label: "Contracts", href: "/contracts", icon: <FolderOpen className="w-4 h-4" /> },
-  { label: "Upload", href: "/contracts/upload", icon: <Upload className="w-4 h-4" /> },
-  { label: "Pricing", href: "/pricing", icon: <CreditCard className="w-4 h-4" /> },
-  { label: "Settings", href: "/settings", icon: <Settings className="w-4 h-4" /> },
-];
 
 const planColors: Record<string, string> = {
   free: "text-muted-foreground",
@@ -27,14 +22,26 @@ const planColors: Record<string, string> = {
 export default function AppLayout({ children, user, onLogout }: AppLayoutProps) {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useI18n();
+
+  const navItems = [
+    { label: t("nav.dashboard"), href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: t("nav.contracts"), href: "/contracts", icon: <FolderOpen className="w-4 h-4" /> },
+    { label: t("nav.upload"), href: "/contracts/upload", icon: <Upload className="w-4 h-4" /> },
+    { label: t("nav.pricing"), href: "/pricing", icon: <CreditCard className="w-4 h-4" /> },
+    { label: t("nav.settings"), href: "/settings", icon: <Settings className="w-4 h-4" /> },
+  ];
 
   const NavContent = () => (
     <>
-      <div className="flex items-center gap-2 px-4 py-5 border-b border-sidebar-border">
-        <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
-          <FileText className="w-3.5 h-3.5 text-primary-foreground" />
+      <div className="flex items-center justify-between px-4 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+            <FileText className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+          <span className="font-bold tracking-tight text-sidebar-foreground">ContractAI</span>
         </div>
-        <span className="font-bold tracking-tight text-sidebar-foreground">ContractAI</span>
+        <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
@@ -74,7 +81,7 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
               data-testid="nav-logout"
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              {t("nav.logout")}
             </button>
           )}
         </div>
@@ -84,12 +91,10 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-sidebar border-r border-sidebar-border flex-shrink-0">
         <NavContent />
       </aside>
 
-      {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-14 px-4 bg-sidebar border-b border-sidebar-border">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
@@ -97,16 +102,18 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
           </div>
           <span className="font-bold text-sm text-sidebar-foreground">ContractAI</span>
         </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-sidebar-foreground p-1"
-          data-testid="button-mobile-menu"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle className="text-sidebar-foreground" />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="text-sidebar-foreground p-1"
+            data-testid="button-mobile-menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
@@ -116,19 +123,20 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
         </div>
       )}
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto md:pt-0 pt-14">
         {children}
         <footer className="px-6 py-4 border-t border-border mt-8">
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <span>© 2026 ContractAI</span>
-            <span>·</span>
+            <span>&copy; 2026 ContractAI</span>
+            <span>&middot;</span>
             <button onClick={() => setLocation("/privacy")} className="hover:text-foreground transition-colors underline underline-offset-2">
               Privacy Policy
             </button>
           </div>
         </footer>
       </main>
+
+      <SupportWidget />
     </div>
   );
 }

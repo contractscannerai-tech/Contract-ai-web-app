@@ -39,7 +39,7 @@ export default function AuthCallbackPage() {
 
         if (!cancelled) {
           toast({ title: "Logged in!", description: "Welcome to ContractAI." });
-          setLocation("/dashboard");
+          setLocation("/dashboard", { replace: true });
         }
       } catch (err) {
         if (!cancelled) {

@@ -97,7 +97,7 @@ export default function PricingPage() {
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   async function handleSelectPlan(planKey: "free" | "pro" | "premium") {

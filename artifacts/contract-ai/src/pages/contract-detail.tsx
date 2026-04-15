@@ -7,8 +7,8 @@ import {
   Shield, Send, BookOpen, AlertCircle, RefreshCw, MessageSquare, Crown,
 } from "lucide-react";
 import {
-  useGetContract, useAnalyzeContract, useGetMe, useLogout,
-  useChatWithContract, useGetChatHistory,
+  useGetContract, useGetMe, useLogout,
+  useGetChatHistory,
   getGetContractQueryKey, getGetChatHistoryQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { RiskSpeedometer } from "@/components/risk-speedometer";
+import { useI18n } from "@/lib/i18n";
 
 function extractErrorMessage(err: unknown): string {
   if (!err) return "The request could not be completed. Please refresh the page and try again.";
@@ -42,6 +43,7 @@ export default function ContractDetailPage() {
   const queryClient = useQueryClient();
   const [analyzing, setAnalyzing] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  const [chatSending, setChatSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const { data: contractData, isLoading } = useGetContract(id, {
@@ -50,8 +52,7 @@ export default function ContractDetailPage() {
 
   const { data: user } = useGetMe();
   const logout = useLogout();
-  const analyzeContract = useAnalyzeContract();
-  const chatMutation = useChatWithContract();
+  const { lang } = useI18n();
   const isPremium = user?.plan === "premium";
 
   const { data: chatHistory } = useGetChatHistory(id, {
@@ -63,18 +64,27 @@ export default function ContractDetailPage() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory, chatMutation.isPending]);
+  }, [chatHistory, chatSending]);
 
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   async function handleAnalyze() {
     setAnalyzing(true);
     try {
-      await analyzeContract.mutateAsync({ id });
+      const res = await fetch(`/api/contracts/${id}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ language: lang }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? `Analysis failed (${res.status})`);
+      }
       queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(id) });
       toast({ title: "Analysis complete!", description: "Your contract report is ready." });
     } catch (err) {
@@ -85,15 +95,27 @@ export default function ContractDetailPage() {
   }
 
   async function handleSendMessage() {
-    if (!chatMessage.trim() || chatMutation.isPending) return;
+    if (!chatMessage.trim() || chatSending) return;
     const msg = chatMessage.trim();
     setChatMessage("");
+    setChatSending(true);
     try {
-      await chatMutation.mutateAsync({ contractId: id, data: { message: msg } });
+      const res = await fetch(`/api/chat/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message: msg, language: lang }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? `Chat failed (${res.status})`);
+      }
       queryClient.invalidateQueries({ queryKey: getGetChatHistoryQueryKey(id) });
     } catch (err) {
       toast({ title: "Chat error", description: extractErrorMessage(err), variant: "destructive" });
       setChatMessage(msg);
+    } finally {
+      setChatSending(false);
     }
   }
 
@@ -315,7 +337,7 @@ export default function ContractDetailPage() {
                           </div>
                         </div>
                       ))}
-                      {chatMutation.isPending && (
+                      {chatSending && (
                         <div className="flex justify-start">
                           <div className="bg-muted rounded-2xl px-4 py-2.5">
                             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -357,18 +379,18 @@ export default function ContractDetailPage() {
                 placeholder="Ask anything about this contract…"
                 rows={1}
                 className="flex-1 bg-transparent text-sm outline-none resize-none placeholder:text-muted-foreground/50 leading-relaxed py-1"
-                disabled={chatMutation.isPending || !analysis}
+                disabled={chatSending || !analysis}
                 data-testid="input-chat"
                 style={{ minHeight: "28px", maxHeight: "120px", overflowY: "auto" }}
               />
               <Button
                 size="sm"
                 onClick={() => void handleSendMessage()}
-                disabled={!chatMessage.trim() || chatMutation.isPending || !analysis}
+                disabled={!chatMessage.trim() || chatSending || !analysis}
                 className="flex-shrink-0 rounded-xl h-9 w-9 p-0 transition-all duration-300"
                 data-testid="button-send-chat"
               >
-                {chatMutation.isPending
+                {chatSending
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <Send className="w-4 h-4" />}
               </Button>

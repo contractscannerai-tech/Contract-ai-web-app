@@ -56,19 +56,38 @@ A complete SaaS web application that lets users upload legal contracts (PDFs), a
 - `/api/dashboard/stats`, `/api/dashboard/recent`
 
 ### Frontend Pages (artifacts/contract-ai/src/pages/)
-- `/` — Landing page
-- `/auth` — Login/signup
-- `/dashboard` — Stats and recent activity
+- `/` — Landing page (with floating review bubbles)
+- `/auth` — Login/signup (uses replace navigation to prevent back-button issues)
+- `/auth/callback` — OAuth callback (Google login)
+- `/dashboard` — Stats, recent activity, AI insight rotation (3s)
 - `/contracts` — Contract list
 - `/contracts/upload` — PDF upload + instant analysis
-- `/contracts/:id` — Contract detail + analysis results + AI chat
+- `/contracts/:id` — Contract detail + analysis results + AI chat (passes language to API)
 - `/pricing` — Plan comparison + upgrade
-- `/settings` — Account info + logout
+- `/settings` — Language selector, theme toggle, referral system, account management
+- `/privacy` — Privacy policy
+- `/terms` — Terms of service (required before signup)
+
+### Frontend Features
+- **Splash screen**: 4s animated logo on app startup (session-scoped)
+- **i18n**: 8 languages (EN/ES/FR/DE/PT/AR/ZH/JA), localStorage persistence, first-visit language popup
+- **Dark mode**: System-pref detection + manual toggle, localStorage persistence
+- **Review bubbles**: Floating testimonials on landing page (8 reviews, 4s rotation)
+- **AI insights**: Dashboard thought bubble rotates every 3s
+- **Referral system**: CAI-XXXXXXXX codes, +3/+5/+10 bonus scans
+- **Scan rewards**: +4 bonus scans at 15 analyses milestone
+- **Support widget**: In-app FAQ + SendGrid escalation
+- **Navigation**: Post-login/logout uses history replace to prevent back-button logout
+
+### API Routes (artifacts/api-server/src/routes/)
+- `/api/referrals/code` — GET/generate referral code
+- `/api/referrals/claim` — POST claim referral code
+- `/api/support/escalate` — POST support escalation (SendGrid)
 
 ## Plans
-- Free: 3 contracts
-- Pro: 50 contracts ($19/mo via Dodo)
-- Premium: Unlimited + AI chat ($49/mo via Dodo)
+- Free: 3 contracts (base) + bonus scans
+- Pro: 20 contracts ($19/mo via Dodo) + bonus scans
+- Premium: 999 contracts + AI chat ($49/mo via Dodo) + bonus scans
 
 ## Key Commands
 

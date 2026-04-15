@@ -130,7 +130,7 @@ export default function UploadPage() {
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   const isFreePlan = user?.plan === "free";

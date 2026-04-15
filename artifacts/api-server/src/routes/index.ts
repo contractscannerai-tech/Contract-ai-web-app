@@ -6,6 +6,8 @@ import analysisRouter from "./analysis.js";
 import chatRouter from "./chat.js";
 import paymentsRouter from "./payments.js";
 import dashboardRouter from "./dashboard.js";
+import referralsRouter from "./referrals.js";
+import supportRouter from "./support.js";
 
 const router: IRouter = Router();
 
@@ -16,5 +18,7 @@ router.use("/contracts", analysisRouter);
 router.use("/chat", chatRouter);
 router.use("/payments", paymentsRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/referrals", referralsRouter);
+router.use("/support", supportRouter);
 
 export default router;

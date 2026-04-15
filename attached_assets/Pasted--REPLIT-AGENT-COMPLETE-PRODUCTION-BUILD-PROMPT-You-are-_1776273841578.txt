@@ -1,0 +1,148 @@
+🚀 REPLIT AGENT — COMPLETE PRODUCTION BUILD PROMPT
+You are an expert full-stack engineer. Build a fully working SaaS web application named:
+🧠 ContractAI
+A contract analysis platform that allows users to upload legal contracts and receive AI-powered insights in a simple, accessible format.
+This is a real production-grade SaaS application, not a demo.
+🎞️ 1. SPLASH SCREEN + INTRO FLOW (MANDATORY)
+App startup flow MUST be:
+Show a 4-second animated logo splash screen
+After splash, display text:
+“Trusted by 10,000+ professionals worldwide”
+Immediately after, show a language selection popup
+LANGUAGE POPUP RULES:
+Must appear BEFORE landing page
+User must select a language to continue
+Must be friendly and visually clean
+Once selected:
+Save language locally (localStorage)
+Apply immediately to entire app
+🌐 2. LANGUAGE SYSTEM (GLOBAL RULE)
+REQUIREMENTS:
+Full multilingual system across entire app
+Must affect:
+Landing page
+Dashboard
+Settings
+Buttons
+AI responses
+AI RULE:
+All AI responses MUST be returned in the selected language.
+PERSISTENCE:
+Language is stored locally
+It must NOT reset unless user manually changes it in settings
+📊 3. LANDING PAGE — REVIEW BUBBLE SYSTEM
+REQUIREMENT:
+Add a floating review bubble UI
+This bubble displays user reviews
+BEHAVIOR:
+Reviews rotate continuously
+Each review appears one after another
+Must feel dynamic and animated
+🤖 4. DASHBOARD — AI INSIGHT BUBBLES
+REQUIREMENT:
+AI-generated insights appear inside bubble UI
+BEHAVIOR RULE:
+Each insight displays for exactly 3 seconds
+Then automatically switches to next insight
+Must loop continuously
+⏪ 5. NAVIGATION BEHAVIOR (CRITICAL UX RULE)
+REQUIREMENTS:
+Back button must NOT log user out
+Must follow proper navigation history inside app
+Users should move step-by-step backwards through pages
+LOGOUT RULE:
+Only logout when user explicitly clicks logout
+If user tries to exit sensitive flow → show confirmation prompt
+🌑 6. DARK MODE / LIGHT MODE SYSTEM
+REQUIREMENTS:
+Add theme toggle in UI:
+🌞 Sun icon = Light mode
+🌙 Moon icon = Dark mode
+RULE:
+Theme choice must persist across sessions
+Must apply across entire application
+🧾 7. USER AGREEMENT SYSTEM (MANDATORY GATE)
+REQUIREMENT:
+Before account creation:
+Show full User Agreement page
+Must be long-form legal text (dense paragraph style)
+RULES:
+User MUST accept checkbox:
+“I agree to the terms”
+User cannot continue without accepting
+Must only appear once per registration
+⚠️ 8. AI DISCLAIMER (MUST BE INSIDE AGREEMENT ONLY)
+MUST BE INCLUDED IN USER AGREEMENT TEXT:
+AI can make mistakes
+AI output is not guaranteed accurate
+Users should not rely solely on AI for legal decisions
+IMPORTANT:
+Do NOT create a separate disclaimer page
+Must only exist inside User Agreement
+🎁 9. REFERRAL SYSTEM
+RULES:
+If a user refers another user:
+If referred user signs up: → referrer gets 3 free scans
+If referred user subscribes to Pro: → referrer gets 5 free scans
+If referred user subscribes to Premium: → referrer gets 10 free scans
+🎁 10. SCAN REWARD SYSTEM
+RULE:
+If user completes 15 scans in a month → user receives +4 bonus scans
+If subscription is renewed: → bonus scans are carried over into next cycle
+📊 11. SUPPORT SYSTEM (TWO LEVELS)
+🟢 BASIC HELP SYSTEM:
+Helps users with:
+navigation
+feature explanations
+how-to questions
+Must respond instantly inside app
+🔴 ESCALATION SUPPORT:
+Triggered when user reports:
+subscription issues
+account problems
+technical failures
+RULE:
+Must be escalated internally to support system workflow
+⚙️ 12. ERROR HANDLING SYSTEM (STRICT RULE)
+REQUIREMENTS:
+All backend errors must include structured format:
+message (human readable)
+technical details
+source (AI / AUTH / SYSTEM)
+RULES:
+No vague errors allowed
+Users must NOT see raw technical stack traces
+System must still log full error internally
+🧠 13. AI BEHAVIOR RULES
+REQUIREMENTS:
+AI must respond in selected language
+AI outputs must be structured and simple
+Must be easy to understand
+Must not produce unstructured or random responses
+✔️ FINAL EXECUTION RULE
+This application MUST be:
+Fully working
+Fully connected end-to-end
+No placeholders
+No fake buttons
+No broken flows
+🚀 CORE FLOW OF APPLICATION
+Splash screen (4 sec)
+Language popup
+Landing page (with review bubbles)
+User agreement (registration gate)
+Login / Register
+Dashboard
+AI insights (3-second rotating bubbles)
+Referral system active
+Scan reward system active
+Support system active
+Theme switching active
+⚠️ FINAL IMPORTANT RULE
+If any feature conflicts arise:
+👉 PRIORITY ORDER:
+User Agreement system
+Language system
+Navigation stability
+AI output correctness
+UI behavior rules

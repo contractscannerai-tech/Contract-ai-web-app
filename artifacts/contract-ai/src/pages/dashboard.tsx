@@ -42,7 +42,7 @@ export default function DashboardPage() {
   async function handleLogout() {
     await logout.mutateAsync({});
     queryClient.clear();
-    setLocation("/");
+    setLocation("/", { replace: true });
   }
 
   const planLabel =

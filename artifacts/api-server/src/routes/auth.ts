@@ -229,12 +229,15 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
+    const baseLimit = PLAN_LIMITS[user.plan] ?? 3;
     res.json({
       id: user.id,
       email: user.email,
       plan: user.plan,
       contractsUsed: user.contractsUsed,
-      contractsLimit: PLAN_LIMITS[user.plan] ?? 3,
+      bonusScans: user.bonusScans ?? 0,
+      contractsLimit: baseLimit + (user.bonusScans ?? 0),
+      referralCode: user.referralCode,
       createdAt: user.createdAt,
     });
   } catch (err) {

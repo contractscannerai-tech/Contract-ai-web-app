@@ -2,13 +2,16 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Zap, FileText, CheckCircle, Star, ArrowRight, Lock, AlertTriangle, BookOpen } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ReviewBubbles } from "@/components/review-bubbles";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Nav */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
@@ -18,48 +21,47 @@ export default function LandingPage() {
             <span className="font-bold text-lg tracking-tight">ContractAI</span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => setLocation("/pricing")} data-testid="link-pricing">
-              Pricing
+              {t("nav.pricing")}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setLocation("/auth")} data-testid="link-login">
-              Login
+              {t("nav.login")}
             </Button>
             <Button size="sm" onClick={() => setLocation("/auth")} data-testid="button-get-started">
-              Get started
+              {t("common.getStarted")}
             </Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 sm:py-32">
         <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-xs font-medium tracking-wide uppercase">
-          AI-Powered Legal Analysis
+          {t("landing.hero.badge")}
         </Badge>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-6 max-w-3xl leading-tight">
-          Understand any contract
-          <span className="text-primary"> in seconds.</span>
+          {t("landing.hero.title1")}
+          <span className="text-primary">{t("landing.hero.title2")}</span>
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
-          Your contract analyzer in your pocket — without paying expensive lawyers. Upload a PDF and get an instant plain-English summary, risk analysis, and key clause extraction.
+          {t("landing.hero.desc")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 mb-12">
           <Button size="lg" onClick={() => setLocation("/auth")} className="gap-2 px-8" data-testid="button-hero-cta">
-            Analyze your first contract free
+            {t("landing.hero.cta")}
             <ArrowRight className="w-4 h-4" />
           </Button>
           <Button size="lg" variant="outline" onClick={() => setLocation("/pricing")} data-testid="button-view-plans">
-            View plans
+            {t("landing.hero.plans")}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">No credit card required. Free plan includes 3 contracts.</p>
+        <p className="text-sm text-muted-foreground">{t("landing.hero.free")}</p>
       </section>
 
-      {/* Features */}
       <section className="py-20 bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Everything you need to review contracts confidently</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">{t("landing.features.title")}</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">Stop signing contracts you don't fully understand. ContractAI gives you the clarity lawyers charge hundreds per hour for.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -67,12 +69,12 @@ export default function LandingPage() {
               {
                 icon: <Zap className="w-5 h-5" />,
                 title: "Instant AI Summary",
-                desc: "Get a plain-English summary of any contract in seconds. No legal jargon, no confusion — just clarity.",
+                desc: "Get a plain-English summary of any contract in seconds. No legal jargon, no confusion \u2014 just clarity.",
               },
               {
                 icon: <AlertTriangle className="w-5 h-5" />,
                 title: "Risk Detection",
-                desc: "AI flags clauses that could hurt you — unfair penalties, liability traps, one-sided termination rights.",
+                desc: "AI flags clauses that could hurt you \u2014 unfair penalties, liability traps, one-sided termination rights.",
               },
               {
                 icon: <BookOpen className="w-5 h-5" />,
@@ -92,7 +94,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
@@ -117,28 +118,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-20 bg-muted/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Trusted by thousands</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">{t("landing.trusted")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { name: "Sarah K.", role: "Freelance Designer", review: "I used to just sign contracts hoping for the best. Now I actually understand what I'm agreeing to. Caught a sneaky non-compete clause before it was too late." },
               { name: "Marcus T.", role: "Startup Founder", review: "We reviewed 12 vendor contracts in one afternoon. What would have cost $3,000 in legal fees took us 20 minutes. Incredible time and cost savings." },
               { name: "Priya N.", role: "Real Estate Investor", review: "The risk flagging is remarkable. It highlighted indemnification clauses I would have missed entirely. Worth every penny of the premium plan." },
-            ].map((t, i) => (
+            ].map((testimonial, i) => (
               <div key={i} className="bg-card border border-card-border rounded-xl p-6 shadow-sm" data-testid={`testimonial-${i}`}>
                 <div className="flex gap-1 mb-3">
                   {Array.from({ length: 5 }).map((_, j) => (
                     <Star key={j} className="w-4 h-4 fill-primary text-primary" />
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{t.review}"</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{testimonial.review}"</p>
                 <div>
-                  <p className="font-semibold text-sm">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                  <p className="font-semibold text-sm">{testimonial.name}</p>
+                  <p className="text-xs text-muted-foreground">{testimonial.role}</p>
                 </div>
               </div>
             ))}
@@ -146,7 +146,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Plans preview */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl font-bold tracking-tight mb-4">Simple, transparent pricing</h2>
@@ -175,7 +174,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust */}
       <section className="py-16 border-t border-border">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-muted-foreground">
@@ -183,28 +181,26 @@ export default function LandingPage() {
               { icon: <Shield className="w-5 h-5" />, label: "Bank-grade encryption" },
               { icon: <Lock className="w-5 h-5" />, label: "Data never sold" },
               { icon: <CheckCircle className="w-5 h-5" />, label: "SOC2 compliant infrastructure" },
-            ].map((t, i) => (
+            ].map((trust, i) => (
               <div key={i} className="flex items-center gap-2">
-                {t.icon}
-                <span>{t.label}</span>
+                {trust.icon}
+                <span>{trust.label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl font-bold tracking-tight mb-4">Ready to stop guessing?</h2>
-          <p className="text-primary-foreground/80 mb-8 text-lg">Start analyzing contracts today. It's free to get started.</p>
+          <h2 className="text-3xl font-bold tracking-tight mb-4">{t("landing.cta.title")}</h2>
+          <p className="text-primary-foreground/80 mb-8 text-lg">{t("landing.cta.desc")}</p>
           <Button size="lg" variant="secondary" onClick={() => setLocation("/auth")} className="gap-2" data-testid="button-cta-bottom">
-            Start for free <ArrowRight className="w-4 h-4" />
+            {t("landing.cta.button")} <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="py-8 border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -213,13 +209,15 @@ export default function LandingPage() {
             </div>
             <span className="font-semibold text-sm">ContractAI</span>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 ContractAI. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">&copy; 2026 ContractAI. All rights reserved.</p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <button onClick={() => setLocation("/pricing")} className="hover:text-foreground transition-colors">Pricing</button>
             <button onClick={() => setLocation("/auth")} className="hover:text-foreground transition-colors">Login</button>
           </div>
         </div>
       </footer>
+
+      <ReviewBubbles />
     </div>
   );
 }

@@ -67,7 +67,7 @@ export default function AuthPage() {
         const result = await login(email, password);
         if (result.success) {
           toast({ title: "Welcome back!", description: "Redirecting to your dashboard..." });
-          setTimeout(() => setLocation("/dashboard"), 600);
+          setTimeout(() => setLocation("/dashboard", { replace: true }), 600);
         } else {
           const msg = friendlyAuthError(result.error, "login");
           toast({ title: "Login failed", description: msg, variant: "destructive" });
@@ -78,7 +78,7 @@ export default function AuthPage() {
         if (result.success) {
           sessionStorage.removeItem("contractai_terms_ts");
           toast({ title: "Account created!", description: "Welcome to ContractAI. Redirecting to your dashboard..." });
-          setTimeout(() => setLocation("/dashboard"), 800);
+          setTimeout(() => setLocation("/dashboard", { replace: true }), 800);
         } else {
           const msg = friendlyAuthError(result.error, "signup");
           toast({ title: "Registration failed", description: msg, variant: "destructive" });

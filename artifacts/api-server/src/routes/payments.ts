@@ -1,7 +1,8 @@
 import { Router } from "express";
 import type { Response, Request } from "express";
 import crypto from "crypto";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, referralsTable } from "@workspace/db";
+import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
@@ -263,6 +264,28 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
         await db.update(usersTable)
           .set({ plan, contractsUsed: 0 })
           .where(eq(usersTable.id, userId));
+
+        const upgradedUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+        if (upgradedUser[0]?.referredBy) {
+          const bonusForReferrer = plan === "premium" ? 10 : 5;
+          const referrer = await db.select().from(usersTable).where(eq(usersTable.id, upgradedUser[0].referredBy)).limit(1);
+          if (referrer[0]) {
+            await db.update(usersTable)
+              .set({ bonusScans: (referrer[0].bonusScans ?? 0) + bonusForReferrer })
+              .where(eq(usersTable.id, referrer[0].id));
+
+            const newStatus = plan === "premium" ? "subscribed_premium" : "subscribed_pro";
+            await db.insert(referralsTable).values({
+              id: uuidv4(),
+              referrerId: referrer[0].id,
+              referredId: userId,
+              status: newStatus as "subscribed_pro" | "subscribed_premium",
+              scansAwarded: bonusForReferrer,
+            }).onConflictDoNothing();
+
+            req.log.info({ source: "REFERRAL", referrerId: referrer[0].id, referredId: userId, bonus: bonusForReferrer, plan }, "Webhook: referral bonus awarded for subscription upgrade");
+          }
+        }
 
         req.log.info({ source: "PAYMENT", userId, plan, eventType: event.type }, "Webhook: plan upgraded — features unlocked");
       } else {

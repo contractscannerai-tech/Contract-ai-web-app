@@ -29,7 +29,15 @@ type AnalysisResult = {
   renegotiation?: string[];
 };
 
-function buildSystemPrompt(plan: string): string {
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English", es: "Spanish", fr: "French", de: "German",
+  pt: "Portuguese", ar: "Arabic", zh: "Chinese (Simplified)", ja: "Japanese",
+};
+
+function buildSystemPrompt(plan: string, language?: string): string {
+  const langName = language && language !== "en" ? LANGUAGE_NAMES[language] ?? "English" : "";
+  const langInstruction = langName ? `\n\nIMPORTANT: You MUST write ALL text values (summary, risks, key_clauses, renegotiation) in ${langName}. Do not use English for any text content.` : "";
+
   if (plan === "free") {
     return `You are a legal document scanner. Your ONLY job is to identify the NAMES and LOCATIONS of risk clauses — nothing more.
 
@@ -46,7 +54,7 @@ Rules (strictly enforced):
 - "summary": 1–2 sentences. State only what type of document this is and who the parties are. Nothing else.
 - "risks": 3–6 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Risk Name]". Example: "Section 4.2 — Termination Without Cause". Do NOT explain the risk. Do NOT say why it matters. Name only.
 - "key_clauses": 3–5 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Clause Name]". Example: "Section 7.1 — Non-Compete Clause". Name and location only. No explanations.
-- Respond with valid JSON only — no markdown, no extra text, no advice.`;
+- Respond with valid JSON only — no markdown, no extra text, no advice.${langInstruction}`;
   }
 
   if (plan === "pro") {
@@ -72,7 +80,7 @@ Guidelines:
   - Explain in plain English what it means and its practical impact
   - Format: "[Section X.X — Clause Name]: [Plain-English explanation of what this means and its real-world impact]"
 - Be specific, thorough, and educational. The user is paying for expert analysis, not vague labels.
-- Respond with valid JSON only — no markdown fences, no extra text.`;
+- Respond with valid JSON only — no markdown fences, no extra text.${langInstruction}`;
   }
 
   return `You are ContractAI's most advanced legal analyst — the equivalent of a senior partner at a top law firm combined with a skilled negotiator. Produce the most comprehensive contract analysis possible.
@@ -98,13 +106,13 @@ Guidelines:
   - Each recommendation must be specific and directly tied to a clause in this contract
   - Format: "[Clause/Topic]: [Specific change to request — e.g., 'Request that Section 4.2 be amended to require 30 days written notice instead of immediate termination']"
   - Cover: payment terms, liability caps, IP ownership, termination notice, non-compete scope/duration, auto-renewal opt-out, jurisdiction, and indemnification where applicable
-- Respond with valid JSON only — no markdown fences, no extra text.`;
+- Respond with valid JSON only — no markdown fences, no extra text.${langInstruction}`;
 }
 
-async function analyzeWithGroq(text: string, plan: string): Promise<AnalysisResult> {
+async function analyzeWithGroq(text: string, plan: string, language?: string): Promise<AnalysisResult> {
   const groq = getGroqClient();
   const truncatedText = text.slice(0, 14000);
-  const systemPrompt = buildSystemPrompt(plan);
+  const systemPrompt = buildSystemPrompt(plan, language);
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
@@ -169,6 +177,7 @@ function calculateRiskLevel(risks: string[]): "low" | "medium" | "high" {
 
 router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params as { id: string };
+  const { language } = req.body as { language?: string };
 
   try {
     const contracts = await db
@@ -199,7 +208,8 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       return;
     }
 
-    const limit = PLAN_LIMITS[user.plan] ?? 3;
+    const baseLimit = PLAN_LIMITS[user.plan] ?? 3;
+    const limit = baseLimit + (user.bonusScans ?? 0);
     if (user.contractsUsed >= limit) {
       res.status(403).json(structuredError(
         "PLAN",
@@ -241,7 +251,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
         charCount: extractedText.length,
       }, `AI: sending contract to GROQ [${user.plan} plan]`);
 
-      analysisResult = await analyzeWithGroq(extractedText, user.plan);
+      analysisResult = await analyzeWithGroq(extractedText, user.plan, language);
 
       req.log.info({
         source: "AI",
@@ -285,13 +295,21 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .set({ status: "analyzed", analyzedAt: new Date(), extractedText: null })
       .where(eq(contractsTable.id, id));
 
+    const newContractsUsed = user.contractsUsed + 1;
+    const updateData: Record<string, unknown> = { contractsUsed: newContractsUsed };
+
+    if (newContractsUsed === 15) {
+      updateData.bonusScans = (user.bonusScans ?? 0) + 4;
+      req.log.info({ source: "REWARD", userId: req.userId, bonus: 4 }, "Scan reward: +4 bonus scans for reaching 15 analyses this month");
+    }
+
     await db.update(usersTable)
-      .set({ contractsUsed: user.contractsUsed + 1 })
+      .set(updateData)
       .where(eq(usersTable.id, req.userId!));
 
     req.log.info({
       source: "AI", contractId: id, riskLevel, analysisId,
-      plan: user.plan, creditsUsed: user.contractsUsed + 1,
+      plan: user.plan, creditsUsed: newContractsUsed,
     }, "AI: analysis complete — extracted text purged, credit charged");
 
     res.json(analysis);

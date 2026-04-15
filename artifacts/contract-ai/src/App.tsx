@@ -1,7 +1,12 @@
+import { useState, useCallback } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { I18nProvider, useI18n } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
+import { SplashScreen } from "@/components/splash-screen";
+import { LanguagePopup } from "@/components/language-popup";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -43,14 +48,45 @@ function Router() {
   );
 }
 
+function AppGate() {
+  const { hasSelectedLanguage } = useI18n();
+  const [splashDone, setSplashDone] = useState(() => {
+    return sessionStorage.getItem("contractai_splash_done") === "1";
+  });
+  const [langDone, setLangDone] = useState(hasSelectedLanguage);
+
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem("contractai_splash_done", "1");
+    setSplashDone(true);
+  }, []);
+
+  const handleLangComplete = useCallback(() => {
+    setLangDone(true);
+  }, []);
+
+  return (
+    <>
+      {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
+      {splashDone && !langDone && <LanguagePopup onComplete={handleLangComplete} />}
+      {splashDone && langDone && (
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+      )}
+      <Toaster />
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
+        <ThemeProvider>
+          <I18nProvider>
+            <AppGate />
+          </I18nProvider>
+        </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
