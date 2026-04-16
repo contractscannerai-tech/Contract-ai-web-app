@@ -30,7 +30,7 @@ export function AiThoughtBubble() {
         setIdx((i) => (i + 1) % TIPS.length);
         setVisible(true);
       }, 500);
-    }, 3000);
+    }, 6000);
     return () => clearInterval(interval);
   }, []);
 
