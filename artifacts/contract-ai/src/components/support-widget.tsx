@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { HelpCircle, X, MessageCircle, Mail, ChevronRight, ArrowLeft } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
 
 const FAQ_ITEMS = [
   { q: "How do I upload a contract?", a: "Go to the Upload page from the sidebar or dashboard. You can drag and drop a PDF or image file, or click to browse. We support PDF, JPG, PNG, and WebP files up to 10MB." },
@@ -15,7 +14,6 @@ const FAQ_ITEMS = [
 type View = "closed" | "menu" | "faq" | "faq-detail" | "escalate" | "sent";
 
 export function SupportWidget() {
-  const { t } = useI18n();
   const [view, setView] = useState<View>("closed");
   const [selectedFaq, setSelectedFaq] = useState(0);
   const [escalateForm, setEscalateForm] = useState({ type: "technical", message: "" });
@@ -42,7 +40,7 @@ export function SupportWidget() {
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
-          <h3 className="text-sm font-semibold">{t("support.title")}</h3>
+          <h3 className="text-sm font-semibold">Help & Support</h3>
         </div>
         <button onClick={() => setView("closed")} className="p-1 hover:bg-muted rounded">
           <X className="w-4 h-4" />
@@ -69,7 +67,7 @@ export function SupportWidget() {
             >
               <Mail className="w-5 h-5 text-destructive flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium">{t("support.escalate")}</p>
+                <p className="text-sm font-medium">Contact Support</p>
                 <p className="text-xs text-muted-foreground">Account, subscription, technical issues</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />

@@ -16,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { RiskSpeedometer } from "@/components/risk-speedometer";
-import { useI18n } from "@/lib/i18n";
 
 function extractErrorMessage(err: unknown): string {
   if (!err) return "The request could not be completed. Please refresh the page and try again.";
@@ -52,7 +51,6 @@ export default function ContractDetailPage() {
 
   const { data: user } = useGetMe();
   const logout = useLogout();
-  const { lang } = useI18n();
   const isPremium = user?.plan === "premium";
 
   const { data: chatHistory } = useGetChatHistory(id, {
@@ -79,7 +77,7 @@ export default function ContractDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ language: lang }),
+        body: JSON.stringify({ language: "en" }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };
@@ -104,7 +102,7 @@ export default function ContractDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: msg, language: lang }),
+        body: JSON.stringify({ message: msg, language: "en" }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };

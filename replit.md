@@ -70,7 +70,7 @@ A complete SaaS web application that lets users upload legal contracts (PDFs), a
 
 ### Frontend Features
 - **Splash screen**: 4s animated logo on app startup (session-scoped)
-- **i18n**: 8 languages (EN/ES/FR/DE/PT/AR/ZH/JA), localStorage persistence, first-visit language popup
+- **i18n**: 8 languages (EN/ES/FR/DE/AR/ZH/JA/KO), localStorage persistence, first-visit language popup, all pages use `useI18n()` + `t()` calls with param substitution, fallback to English for untranslated keys
 - **Dark mode**: System-pref detection + manual toggle, localStorage persistence
 - **Review bubbles**: Floating testimonials on landing page (8 reviews, 4s rotation)
 - **AI insights**: Dashboard thought bubble rotates every 3s

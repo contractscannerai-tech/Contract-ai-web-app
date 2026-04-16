@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatFileSize } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import type { Contract } from "@workspace/api-client-react";
+import { useI18n } from "@/lib/i18n";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024;
@@ -113,6 +114,7 @@ export default function UploadPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayFile, setDisplayFile] = useState<File | null>(null);
@@ -169,9 +171,6 @@ export default function UploadPage() {
       setStage("compressing");
       try {
         fileToUpload = await compressImage(file);
-        if (fileToUpload !== file) {
-          console.info(`[Upload] Compressed ${formatFileSize(file.size)} → ${formatFileSize(fileToUpload.size)}`);
-        }
       } catch {
         fileToUpload = file;
       }
@@ -200,7 +199,6 @@ export default function UploadPage() {
     } catch (err) {
       setStage("idle");
       const msg = err instanceof Error ? err.message : "Upload failed — please try again.";
-      console.error("[Upload] Error:", msg, err);
       toast({
         title: "Upload failed",
         description: `${msg} You have not been charged for this attempt.`,
@@ -242,15 +240,14 @@ export default function UploadPage() {
       queryClient.invalidateQueries();
 
       setStage("done");
-      toast({ title: "Analysis complete!", description: "Your contract report is ready." });
+      toast({ title: t("upload.analysisComplete"), description: t("upload.redirecting") });
       setTimeout(() => setLocation(`/contracts/${uploadedContractId}`), 900);
     } catch (err) {
       setStage("ready");
       setAnalysisFailed(true);
       const msg = err instanceof Error ? err.message : "Analysis failed — please try again.";
-      console.error("[Analyze] Error:", msg, err);
       toast({
-        title: "Analysis failed",
+        title: t("upload.analysisFailed"),
         description: msg,
         variant: "destructive",
       });
@@ -266,9 +263,9 @@ export default function UploadPage() {
     <AppLayout user={user} onLogout={handleLogout}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight mb-2">Upload Contract</h1>
+          <h1 className="text-2xl font-bold tracking-tight mb-2">{t("upload.title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Drop a PDF or photo — we'll extract the text automatically, then analyze it with AI when you're ready.
+            {t("upload.subtitle")}
           </p>
         </div>
 
@@ -277,19 +274,18 @@ export default function UploadPage() {
             <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-yellow-700">
-                Free plan: {user.contractsUsed}/{user.contractsLimit} contracts used
+                {t("upload.freePlanUsed", { used: String(user.contractsUsed), limit: String(user.contractsLimit) })}
               </p>
               <button
                 onClick={() => setLocation("/pricing")}
                 className="text-xs text-yellow-700 underline underline-offset-2 mt-0.5"
               >
-                Upgrade for more
+                {t("upload.upgradeMore")}
               </button>
             </div>
           </div>
         )}
 
-        {/* Dropzone */}
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center transition-all duration-200 ${
             dragOver
@@ -322,7 +318,7 @@ export default function UploadPage() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {ACCEPTED_TYPES[shownFile.type] ?? "File"} · {formatFileSize(shownFile.size)}
                   {stage === "ready" && (
-                    <span className="text-green-600 font-medium"> · Ready to analyze</span>
+                    <span className="text-green-600 font-medium"> · {t("upload.readyToAnalyze")}</span>
                   )}
                 </p>
               </div>
@@ -332,7 +328,7 @@ export default function UploadPage() {
                   className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
                   data-testid="button-clear-file"
                 >
-                  <X className="w-3 h-3" /> Remove file
+                  <X className="w-3 h-3" /> {t("upload.removeFile")}
                 </button>
               )}
             </div>
@@ -342,13 +338,11 @@ export default function UploadPage() {
                 <Upload className="w-7 h-7 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-sm">Drop your contract here</p>
-                <p className="text-xs text-muted-foreground mt-1">or click to browse files</p>
+                <p className="font-medium text-sm">{t("upload.dropHere")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("upload.clickBrowse")}</p>
               </div>
               <p className="text-xs text-muted-foreground">
-                {isFreePlan
-                  ? "PDF only on Free plan · Max 10MB"
-                  : "PDF or image (JPEG, PNG, WebP) · Max 10MB"}
+                {isFreePlan ? t("upload.pdfOnly") : t("upload.pdfOrImage")}
               </p>
               {isFreePlan && (
                 <button
@@ -356,7 +350,7 @@ export default function UploadPage() {
                   onClick={(e) => { e.stopPropagation(); setLocation("/pricing"); }}
                   className="text-xs text-primary underline underline-offset-2"
                 >
-                  Upgrade to scan photos
+                  {t("upload.upgradePhotos")}
                 </button>
               )}
             </div>
@@ -379,13 +373,12 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Status panels */}
         {stage === "compressing" && (
           <div className="mt-4 flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
             <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium">Compressing image…</p>
-              <p className="text-xs text-muted-foreground">Optimising for faster upload</p>
+              <p className="text-sm font-medium">{t("upload.compressing")}</p>
+              <p className="text-xs text-muted-foreground">{t("upload.optimizing")}</p>
             </div>
           </div>
         )}
@@ -396,12 +389,12 @@ export default function UploadPage() {
               <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium">
-                  {isImage ? "Running OCR scan…" : "Extracting digital text…"}
+                  {isImage ? t("upload.runningOCR") : t("upload.extractingText")}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {isImage
-                    ? `Sending image to OCR engine · ${uploadProgress}%`
-                    : `Parsing PDF directly — no OCR needed · ${uploadProgress}%`}
+                    ? `${t("upload.ocrProgress")} · ${uploadProgress}%`
+                    : `${t("upload.pdfProgress")} · ${uploadProgress}%`}
                 </p>
               </div>
             </div>
@@ -419,9 +412,9 @@ export default function UploadPage() {
             <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-green-700">
-                {isImage ? "OCR scan complete" : "Digital text extracted"} — ready for AI analysis
+                {isImage ? t("upload.ocrComplete") : t("upload.textExtracted")} — {t("upload.readyForAI")}
               </p>
-              <p className="text-xs text-muted-foreground">Click Analyze below to run the AI review</p>
+              <p className="text-xs text-muted-foreground">{t("upload.clickAnalyze")}</p>
             </div>
           </div>
         )}
@@ -430,8 +423,8 @@ export default function UploadPage() {
           <div className="mt-4 flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3" data-testid="status-analyzing">
             <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium">Analyzing with AI…</p>
-              <p className="text-xs text-muted-foreground">This typically takes 10–30 seconds</p>
+              <p className="text-sm font-medium">{t("upload.analyzing")}</p>
+              <p className="text-xs text-muted-foreground">{t("upload.analyzingTime")}</p>
             </div>
           </div>
         )}
@@ -440,8 +433,8 @@ export default function UploadPage() {
           <div className="mt-4 flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3" data-testid="status-done">
             <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-700">Analysis complete!</p>
-              <p className="text-xs text-muted-foreground">Redirecting to your report…</p>
+              <p className="text-sm font-medium text-green-700">{t("upload.analysisComplete")}</p>
+              <p className="text-xs text-muted-foreground">{t("upload.redirecting")}</p>
             </div>
           </div>
         )}
@@ -450,12 +443,11 @@ export default function UploadPage() {
           <div className="mt-4 flex items-start gap-3 bg-muted/60 border border-border rounded-lg px-4 py-3">
             <ShieldCheck className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Analysis failed. <strong className="text-foreground">You have not been charged for this attempt.</strong> Your file is still uploaded — you can try analyzing again below.
+              {t("upload.analysisFailed")} <strong className="text-foreground">{t("upload.notCharged")}</strong> {t("upload.retryBelow")}
             </p>
           </div>
         )}
 
-        {/* Analyze button — locked until server confirms upload + OCR ready */}
         <Button
           size="lg"
           className={`w-full mt-6 gap-2 transition-all duration-300 ${analyzeEnabled ? "opacity-100" : "opacity-40"}`}
@@ -466,27 +458,27 @@ export default function UploadPage() {
           {stage === "analyzing" || stage === "done" ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              {stage === "analyzing" ? "Analyzing…" : "Redirecting…"}
+              {stage === "analyzing" ? t("upload.analyzing") : t("upload.redirecting")}
             </>
           ) : stage === "compressing" || stage === "uploading" ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Uploading…
+              {t("upload.uploading")}
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
               {analyzeEnabled
                 ? analysisFailed
-                  ? "Retry analysis"
-                  : "Analyze contract"
-                : "Select a file to get started"}
+                  ? t("upload.retryAnalysis")
+                  : t("upload.analyzeContract")
+                : t("upload.selectFile")}
             </>
           )}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Your contract is processed securely and never shared with third parties.
+          {t("upload.secureProcessing")}
         </p>
       </div>
     </AppLayout>

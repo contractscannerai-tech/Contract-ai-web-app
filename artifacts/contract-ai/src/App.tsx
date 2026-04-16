@@ -3,10 +3,11 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
+import { I18nProvider } from "@/lib/i18n";
 import { SplashScreen } from "@/components/splash-screen";
 import { LanguagePopup } from "@/components/language-popup";
+import { TermsGate } from "@/components/terms-gate";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -29,18 +30,22 @@ const queryClient = new QueryClient({
   },
 });
 
+function Gated({ children }: { children: React.ReactNode }) {
+  return <TermsGate>{children}</TermsGate>;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/auth/callback" component={AuthCallbackPage} />
-      <Route path="/dashboard" component={DashboardPage} />
-      <Route path="/contracts/upload" component={UploadPage} />
-      <Route path="/contracts/:id" component={ContractDetailPage} />
-      <Route path="/contracts" component={ContractsPage} />
+      <Route path="/dashboard">{() => <Gated><DashboardPage /></Gated>}</Route>
+      <Route path="/contracts/upload">{() => <Gated><UploadPage /></Gated>}</Route>
+      <Route path="/contracts/:id">{(params) => <Gated><ContractDetailPage {...params} /></Gated>}</Route>
+      <Route path="/contracts">{() => <Gated><ContractsPage /></Gated>}</Route>
       <Route path="/pricing" component={PricingPage} />
-      <Route path="/settings" component={SettingsPage} />
+      <Route path="/settings">{() => <Gated><SettingsPage /></Gated>}</Route>
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route component={NotFound} />
@@ -49,11 +54,13 @@ function Router() {
 }
 
 function AppGate() {
-  const { hasSelectedLanguage } = useI18n();
   const [splashDone, setSplashDone] = useState(() => {
     return sessionStorage.getItem("contractai_splash_done") === "1";
   });
-  const [langDone, setLangDone] = useState(hasSelectedLanguage);
+
+  const [langChosen, setLangChosen] = useState(() => {
+    return localStorage.getItem("contractai_lang") !== null;
+  });
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("contractai_splash_done", "1");
@@ -61,14 +68,14 @@ function AppGate() {
   }, []);
 
   const handleLangComplete = useCallback(() => {
-    setLangDone(true);
+    setLangChosen(true);
   }, []);
 
   return (
     <>
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {splashDone && !langDone && <LanguagePopup onComplete={handleLangComplete} />}
-      {splashDone && langDone && (
+      {splashDone && !langChosen && <LanguagePopup onComplete={handleLangComplete} />}
+      {splashDone && langChosen && (
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

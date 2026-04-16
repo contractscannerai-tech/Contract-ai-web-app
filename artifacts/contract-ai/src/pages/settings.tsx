@@ -5,15 +5,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   LogOut, Crown, User, FileText, Trash2, Shield,
   AlertTriangle, Loader2, ExternalLink, Sun, Moon,
-  Globe, Gift, Copy, Check,
+  Gift, Copy, Check, Globe,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
-import { useI18n, LANGUAGES, type LangCode } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
+import { useI18n, LANGUAGES } from "@/lib/i18n";
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -27,8 +27,8 @@ export default function SettingsPage() {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
   const { toast } = useToast();
-  const { lang, setLang, t } = useI18n();
   const { theme, setTheme } = useTheme();
+  const { t, lang, setLang } = useI18n();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -130,11 +130,11 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium" data-testid="text-email">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">Account email</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.accountEmail")}</p>
                 </div>
               </div>
               {user.createdAt && (
-                <p className="text-sm text-muted-foreground">Member since {formatDate(user.createdAt)}</p>
+                <p className="text-sm text-muted-foreground">{t("settings.memberSince")} {formatDate(user.createdAt)}</p>
               )}
             </div>
           ) : null}
@@ -159,8 +159,8 @@ export default function SettingsPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground" data-testid="text-usage">
-                      {user.contractsUsed} of {user.contractsLimit === 999 ? "Unlimited" : user.contractsLimit} contracts used
-                      {(user as Record<string, unknown>).bonusScans ? ` (+${(user as Record<string, unknown>).bonusScans} bonus)` : ""}
+                      {user.contractsUsed} {user.contractsLimit === 999 ? t("settings.unlimitedUsed") : t("settings.contractsUsed", { limit: String(user.contractsLimit) })}
+                      {(user as Record<string, unknown>).bonusScans ? ` (${t("settings.bonus", { count: String((user as Record<string, unknown>).bonusScans) })})` : ""}
                     </p>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function SettingsPage() {
               )}
               {user.plan !== "premium" && (
                 <Button variant="outline" size="sm" onClick={() => setLocation("/pricing")} className="gap-2" data-testid="button-upgrade">
-                  <Crown className="w-4 h-4" /> {t("common.upgrade")}
+                  <Crown className="w-4 h-4" /> {t("settings.upgradePlan")}
                 </Button>
               )}
             </div>
@@ -207,7 +207,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.theme")}</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.appearance")}</h2>
           <div className="flex gap-3">
             <button
               onClick={() => setTheme("light")}
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                 theme === "light" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
               }`}
             >
-              <Sun className="w-4 h-4" /> {t("theme.light")}
+              <Sun className="w-4 h-4" /> {t("settings.light")}
             </button>
             <button
               onClick={() => setTheme("dark")}
@@ -223,7 +223,7 @@ export default function SettingsPage() {
                 theme === "dark" ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
               }`}
             >
-              <Moon className="w-4 h-4" /> {t("theme.dark")}
+              <Moon className="w-4 h-4" /> {t("settings.dark")}
             </button>
           </div>
         </div>
@@ -235,30 +235,30 @@ export default function SettingsPage() {
           {referralData ? (
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Your referral code</p>
+                <p className="text-xs text-muted-foreground mb-1.5">{t("settings.referralCode")}</p>
                 <div className="flex items-center gap-2">
                   <code className="bg-muted px-3 py-2 rounded-lg text-sm font-mono flex-1">{referralData.referralCode}</code>
                   <Button variant="outline" size="sm" onClick={copyReferralCode} className="gap-1.5">
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? "Copied" : "Copy"}
+                    {copied ? t("settings.copied") : t("settings.copy")}
                   </Button>
                 </div>
               </div>
               <div className="flex gap-6 text-sm">
                 <div>
                   <p className="text-2xl font-bold">{referralData.totalReferrals}</p>
-                  <p className="text-xs text-muted-foreground">Referrals</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.referrals")}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{referralData.totalScansAwarded}</p>
-                  <p className="text-xs text-muted-foreground">Bonus scans earned</p>
+                  <p className="text-xs text-muted-foreground">{t("settings.bonusScansEarned")}</p>
                 </div>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-                <p>Share your code and earn bonus scans:</p>
-                <p>Friend signs up: +3 scans</p>
-                <p>Friend subscribes to Pro: +5 scans</p>
-                <p>Friend subscribes to Premium: +10 scans</p>
+                <p>{t("settings.shareCodeInfo")}</p>
+                <p>{t("settings.signUpBonus")}</p>
+                <p>{t("settings.proBonus")}</p>
+                <p>{t("settings.premiumBonus")}</p>
               </div>
             </div>
           ) : (
@@ -266,67 +266,67 @@ export default function SettingsPage() {
           )}
 
           <div className="mt-5 pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground mb-2">Have a referral code?</p>
+            <p className="text-xs text-muted-foreground mb-2">{t("settings.haveCode")}</p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={referralInput}
                 onChange={(e) => setReferralInput(e.target.value)}
-                placeholder="Enter referral code"
+                placeholder={t("settings.enterCode")}
                 className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               />
               <Button size="sm" onClick={() => void handleClaimReferral()} disabled={!referralInput.trim() || claimingReferral}>
-                {claimingReferral ? "Applying..." : "Apply"}
+                {claimingReferral ? t("settings.applying") : t("settings.apply")}
               </Button>
             </div>
           </div>
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Quick Actions</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.quickActions")}</h2>
           <div className="flex flex-col gap-2">
             <Button variant="outline" className="justify-start gap-2" onClick={() => setLocation("/contracts")} data-testid="button-view-contracts">
-              <FileText className="w-4 h-4" /> View all contracts
+              <FileText className="w-4 h-4" /> {t("settings.viewContracts")}
             </Button>
             <Button variant="outline" className="justify-start gap-2" onClick={() => setLocation("/contracts/upload")} data-testid="button-upload">
-              <FileText className="w-4 h-4" /> Upload new contract
+              <FileText className="w-4 h-4" /> {t("settings.uploadNew")}
             </Button>
           </div>
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Privacy & Data</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.privacyData")}</h2>
           <div className="space-y-3 text-sm text-muted-foreground">
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>Uploaded files are processed in-memory only and <strong className="text-foreground">never permanently stored</strong>.</span>
+              <span>{t("settings.privacy1")} <strong className="text-foreground">{t("settings.privacy1b")}</strong>.</span>
             </div>
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>Raw contract text is <strong className="text-foreground">permanently deleted</strong> within seconds of AI analysis completing.</span>
+              <span>{t("settings.privacy2")} <strong className="text-foreground">{t("settings.privacy2b")}</strong> {t("settings.privacy2c")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>Only structured analysis results (summary, risks, key clauses) are retained while your account is active.</span>
+              <span>{t("settings.privacy3")}</span>
             </div>
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>Your email is used only for authentication and support — <strong className="text-foreground">never for marketing</strong>.</span>
+              <span>{t("settings.privacy4a")} <strong className="text-foreground">{t("settings.privacy4b")}</strong>.</span>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-4 gap-2 text-primary"
-            onClick={() => setLocation("/privacy")}
+          <a
+            href="https://contractscannerai-tech.github.io/Contractai-privacy-policy/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-4 text-sm text-primary hover:opacity-80 transition-opacity"
             data-testid="button-privacy-policy"
           >
-            <ExternalLink className="w-3.5 h-3.5" /> Read full Privacy Policy
-          </Button>
+            <ExternalLink className="w-3.5 h-3.5" /> {t("settings.readPrivacy")}
+          </a>
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Session</h2>
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">{t("settings.session")}</h2>
           <Button
             variant="outline"
             className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
@@ -335,14 +335,14 @@ export default function SettingsPage() {
             data-testid="button-logout"
           >
             <LogOut className="w-4 h-4" />
-            {logout.isPending ? "Signing out..." : "Sign out"}
+            {logout.isPending ? t("settings.signingOut") : t("settings.signOut")}
           </Button>
         </div>
 
         <div className="bg-card border border-destructive/20 rounded-xl p-6 shadow-sm">
-          <h2 className="font-semibold text-sm text-destructive uppercase tracking-wider mb-1">Danger Zone</h2>
+          <h2 className="font-semibold text-sm text-destructive uppercase tracking-wider mb-1">{t("settings.dangerZone")}</h2>
           <p className="text-xs text-muted-foreground mb-4">
-            Permanently delete your account and all associated data. This action cannot be undone.
+            {t("settings.dangerDesc")}
           </p>
 
           {!showDeleteConfirm ? (
@@ -352,27 +352,27 @@ export default function SettingsPage() {
               onClick={() => setShowDeleteConfirm(true)}
               data-testid="button-delete-account-start"
             >
-              <Trash2 className="w-4 h-4" /> Delete account
+              <Trash2 className="w-4 h-4" /> {t("settings.deleteAccount")}
             </Button>
           ) : (
             <div className="space-y-4">
               <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 rounded-lg p-4">
                 <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-destructive mb-2">This will permanently delete:</p>
+                  <p className="font-semibold text-destructive mb-2">{t("settings.deleteWarning")}</p>
                   <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>All your uploaded contracts and their analysis results</li>
-                    <li>All your AI chat history</li>
-                    <li>Your account credentials and profile</li>
-                    <li>All subscription data</li>
+                    <li>{t("settings.deleteItem1")}</li>
+                    <li>{t("settings.deleteItem2")}</li>
+                    <li>{t("settings.deleteItem3")}</li>
+                    <li>{t("settings.deleteItem4")}</li>
                   </ul>
-                  <p className="mt-2 font-medium text-foreground">This cannot be undone.</p>
+                  <p className="mt-2 font-medium text-foreground">{t("settings.cannotUndo")}</p>
                 </div>
               </div>
 
               <div>
                 <label className="text-xs text-muted-foreground block mb-1.5">
-                  Type <strong className="text-foreground font-mono">delete</strong> to confirm
+                  {t("settings.typeDelete", { word: "delete" })}
                 </label>
                 <input
                   type="text"
@@ -391,7 +391,7 @@ export default function SettingsPage() {
                   disabled={deletingAccount}
                   data-testid="button-delete-cancel"
                 >
-                  Cancel
+                  {t("settings.cancel")}
                 </Button>
                 <Button
                   className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
@@ -400,9 +400,9 @@ export default function SettingsPage() {
                   data-testid="button-delete-confirm"
                 >
                   {deletingAccount ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {t("settings.deleting")}</>
                   ) : (
-                    <><Trash2 className="w-4 h-4" /> Permanently delete account</>
+                    <><Trash2 className="w-4 h-4" /> {t("settings.permanentlyDelete")}</>
                   )}
                 </Button>
               </div>

@@ -13,6 +13,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { AiThoughtBubble } from "@/components/ai-thought-bubble";
 import { FeatureGrid } from "@/components/feature-grid";
+import { useI18n } from "@/lib/i18n";
 
 const riskBadge = (level: string | null) => {
   if (!level) return null;
@@ -38,6 +39,7 @@ export default function DashboardPage() {
   const { data: recent, isLoading: recentLoading } = useGetRecentActivity();
   const { data: user } = useGetMe();
   const logout = useLogout();
+  const { t } = useI18n();
 
   async function handleLogout() {
     await logout.mutateAsync({});
@@ -59,10 +61,9 @@ export default function DashboardPage() {
     <AppLayout user={user} onLogout={handleLogout}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
             {user && (
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${planColor}`}>
@@ -70,48 +71,45 @@ export default function DashboardPage() {
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {user.contractsLimit === 999
-                    ? `${user.contractsUsed} contracts analyzed`
-                    : `${user.contractsUsed} / ${user.contractsLimit} contracts used`}
+                    ? `${user.contractsUsed} ${t("dashboard.contractsAnalyzed")}`
+                    : `${user.contractsUsed} / ${user.contractsLimit} ${t("dashboard.contractsUsed")}`}
                 </span>
               </div>
             )}
           </div>
           <Button onClick={() => setLocation("/contracts/upload")} className="gap-2 shadow-sm" data-testid="button-upload-contract">
             <Upload className="w-4 h-4" />
-            Upload contract
+            {t("dashboard.uploadContract")}
           </Button>
         </div>
 
-        {/* AI Thought Bubble */}
         <AiThoughtBubble />
 
-        {/* Feature Grid */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("dashboard.quickActions")}</h2>
             {user?.plan === "free" && (
               <button
                 onClick={() => setLocation("/pricing")}
                 className="text-xs text-primary font-medium hover:underline underline-offset-2"
               >
-                Unlock all features →
+                {t("dashboard.unlockFeatures")}
               </button>
             )}
           </div>
           <FeatureGrid userPlan={(user?.plan as "free" | "pro" | "premium") ?? "free"} />
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {statsLoading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
           ) : stats ? (
             <>
               {[
-                { icon: <FileText className="w-5 h-5" />,     label: "Total Contracts", value: stats.totalContracts,      color: "text-primary",     bg: "bg-primary/8" },
-                { icon: <CheckCircle className="w-5 h-5" />,  label: "Analyzed",        value: stats.analyzedContracts,    color: "text-green-600",   bg: "bg-green-500/8" },
-                { icon: <AlertTriangle className="w-5 h-5" />,label: "High Risk",        value: stats.highRiskContracts,    color: "text-destructive", bg: "bg-destructive/8" },
-                { icon: <BarChart3 className="w-5 h-5" />,    label: "Plan Usage",       value: `${stats.planUsagePercent}%`,color: "text-accent",     bg: "bg-accent/8" },
+                { icon: <FileText className="w-5 h-5" />,     label: t("dashboard.stats.total"), value: stats.totalContracts,      color: "text-primary",     bg: "bg-primary/8" },
+                { icon: <CheckCircle className="w-5 h-5" />,  label: t("dashboard.stats.analyzed"),        value: stats.analyzedContracts,    color: "text-green-600",   bg: "bg-green-500/8" },
+                { icon: <AlertTriangle className="w-5 h-5" />,label: t("dashboard.stats.highRisk"),        value: stats.highRiskContracts,    color: "text-destructive", bg: "bg-destructive/8" },
+                { icon: <BarChart3 className="w-5 h-5" />,    label: t("dashboard.stats.planUsage"),       value: `${stats.planUsagePercent}%`,color: "text-accent",     bg: "bg-accent/8" },
               ].map((s, i) => (
                 <div key={i} className="bg-card border border-card-border rounded-xl p-5 shadow-sm" data-testid={`stat-card-${i}`}>
                   <div className={`w-9 h-9 ${s.bg} rounded-lg flex items-center justify-center ${s.color} mb-3`}>
@@ -125,16 +123,15 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        {/* Plan usage bar */}
         {stats && (
           <div className="bg-card border border-card-border rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium text-sm">Plan Usage</span>
+                <span className="font-medium text-sm">{t("dashboard.planUsage")}</span>
               </div>
               <span className="text-sm text-muted-foreground tabular-nums">
-                {stats.contractsUsed} / {stats.contractsLimit === 999 ? "Unlimited" : stats.contractsLimit}
+                {stats.contractsUsed} / {stats.contractsLimit === 999 ? t("dashboard.unlimited") : stats.contractsLimit}
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
@@ -149,21 +146,20 @@ export default function DashboardPage() {
             </div>
             {stats.plan !== "premium" && stats.planUsagePercent >= 80 && (
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Running low — upgrade before you hit the limit.</p>
+                <p className="text-xs text-muted-foreground">{t("dashboard.upgradeWarning")}</p>
                 <Button size="sm" variant="outline" onClick={() => setLocation("/pricing")} data-testid="button-upgrade-usage">
-                  Upgrade plan
+                  {t("dashboard.upgradePlan")}
                 </Button>
               </div>
             )}
           </div>
         )}
 
-        {/* Recent Activity */}
         <div className="bg-card border border-card-border rounded-xl shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold text-sm">Recent Activity</h2>
+            <h2 className="font-semibold text-sm">{t("dashboard.recentActivity")}</h2>
             <Button variant="ghost" size="sm" onClick={() => setLocation("/contracts")} data-testid="button-view-all-contracts">
-              View all <ChevronRight className="w-4 h-4 ml-1" />
+              {t("dashboard.viewAll")} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
 
@@ -174,10 +170,10 @@ export default function DashboardPage() {
           ) : !recent || recent.length === 0 ? (
             <div className="py-16 text-center">
               <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium mb-1">No contracts yet</p>
-              <p className="text-xs text-muted-foreground mb-5">Upload your first contract to get started</p>
+              <p className="text-sm font-medium mb-1">{t("dashboard.noContracts")}</p>
+              <p className="text-xs text-muted-foreground mb-5">{t("dashboard.noContractsDesc")}</p>
               <Button size="sm" onClick={() => setLocation("/contracts/upload")} data-testid="button-first-upload">
-                Upload a contract
+                {t("dashboard.uploadFirst")}
               </Button>
             </div>
           ) : (

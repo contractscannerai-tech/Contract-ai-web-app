@@ -14,6 +14,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import AppLayout from "@/components/layout";
+import { useI18n } from "@/lib/i18n";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   uploaded: { label: "Uploaded", icon: <Clock className="w-3 h-3" />, className: "bg-muted text-muted-foreground" },
@@ -29,6 +30,7 @@ export default function ContractsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { t } = useI18n();
 
   const { data: contracts, isLoading } = useListContracts();
   const { data: user } = useGetMe();
@@ -43,7 +45,7 @@ export default function ContractsPage() {
 
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm("Delete this contract? This action cannot be undone.")) return;
+    if (!confirm(t("contracts.deleteConfirm"))) return;
     setDeletingId(id);
     try {
       await deleteContract.mutateAsync({ id });
@@ -62,19 +64,19 @@ export default function ContractsPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Contracts</h1>
-            <p className="text-muted-foreground text-sm mt-1">{contracts?.length ?? 0} contracts total</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t("contracts.title")}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{contracts?.length ?? 0} {t("contracts.total")}</p>
           </div>
           <Button onClick={() => setLocation("/contracts/upload")} className="gap-2" data-testid="button-upload">
             <Upload className="w-4 h-4" />
-            Upload
+            {t("contracts.upload")}
           </Button>
         </div>
 
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search contracts..."
+            placeholder={t("contracts.search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -90,13 +92,13 @@ export default function ContractsPage() {
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
               <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium mb-1">{search ? "No contracts match your search" : "No contracts yet"}</p>
+              <p className="font-medium mb-1">{search ? t("contracts.noMatch") : t("contracts.noContracts")}</p>
               <p className="text-sm text-muted-foreground mb-6">
-                {search ? "Try a different search term" : "Upload your first contract to get started"}
+                {search ? t("contracts.tryDifferent") : t("contracts.getStarted")}
               </p>
               {!search && (
                 <Button onClick={() => setLocation("/contracts/upload")} data-testid="button-first-upload">
-                  Upload a contract
+                  {t("contracts.uploadContract")}
                 </Button>
               )}
             </div>

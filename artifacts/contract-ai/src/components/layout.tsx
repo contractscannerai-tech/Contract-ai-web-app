@@ -3,9 +3,11 @@ import { FileText, LayoutDashboard, FolderOpen, Settings, Upload, CreditCard, Lo
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SupportWidget } from "@/components/support-widget";
+import { useI18n } from "@/lib/i18n";
+
+const PRIVACY_URL = "https://contractscannerai-tech.github.io/Contractai-privacy-policy/";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -127,11 +129,11 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
         {children}
         <footer className="px-6 py-4 border-t border-border mt-8">
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <span>&copy; 2026 ContractAI</span>
+            <span>{t("common.rights")}</span>
             <span>&middot;</span>
-            <button onClick={() => setLocation("/privacy")} className="hover:text-foreground transition-colors underline underline-offset-2">
-              Privacy Policy
-            </button>
+            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline underline-offset-2">
+              {t("landing.footer.privacy")}
+            </a>
           </div>
         </footer>
       </main>

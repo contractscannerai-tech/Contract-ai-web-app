@@ -238,6 +238,7 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       bonusScans: user.bonusScans ?? 0,
       contractsLimit: baseLimit + (user.bonusScans ?? 0),
       referralCode: user.referralCode,
+      termsAccepted: user.termsAccepted ?? false,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -249,6 +250,19 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       userId: req.userId,
     }, "Get me: unhandled exception");
     res.status(500).json(structuredError("AUTH", "Failed to get user info", err instanceof Error ? err.message : String(err)));
+  }
+});
+
+router.post("/accept-terms", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    await db
+      .update(usersTable)
+      .set({ termsAccepted: true, termsAcceptedAt: new Date() })
+      .where(eq(usersTable.id, req.userId!));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ error: true, source: "AUTH", message: "Failed to accept terms", details: err instanceof Error ? err.message : String(err) }, "Accept terms error");
+    res.status(500).json(structuredError("AUTH", "Failed to save terms acceptance", err instanceof Error ? err.message : String(err)));
   }
 });
 

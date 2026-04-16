@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
-  const { t } = useI18n();
   const [phase, setPhase] = useState<"logo" | "trusted" | "done">("logo");
 
   useEffect(() => {
@@ -30,7 +28,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       </div>
 
       <p className={`text-sm text-muted-foreground mt-4 transition-all duration-700 ${phase === "trusted" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-        {t("splash.trusted")}
+        Trusted by 10,000+ professionals worldwide
       </p>
     </div>
   );
