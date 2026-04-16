@@ -35,7 +35,8 @@ const PLAN_DETAILS = {
       "Unlimited contracts (PDF + Photo)",
       "Renegotiation recommendations per clause",
       "AI chat — unlimited questions",
-      "Priority processing & support",
+      "Document Drafting, Resume Builder, Career Guidance",
+      "Full Document Templates Library",
     ],
   },
 };

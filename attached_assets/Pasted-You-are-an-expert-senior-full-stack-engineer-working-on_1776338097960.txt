@@ -1,0 +1,324 @@
+You are an expert senior full-stack engineer working on the ContractAI SaaS application.
+
+This is a PRODUCTION system. Nothing should be fake, incomplete, or placeholder-based.
+
+Your task is to IMPLEMENT and UPDATE the system with strict backend + frontend integration.
+
+---
+
+🚨 CRITICAL EXECUTION RULES (HIGHEST PRIORITY)
+
+1. NO FAKE FEATURES:
+
+- Every UI feature MUST connect to a real backend endpoint
+- If backend logic is not implemented, DO NOT render the UI
+
+2. END-TO-END FLOW (MANDATORY):
+   Every feature must follow:
+
+- User input (frontend form)
+- API call (fetch/axios)
+- Backend processing (AI or logic)
+- Response returned
+- UI displays result clearly
+
+3. BUTTON RULE:
+
+- EVERY button must perform a real action
+- No dead clicks
+- No console-only actions
+
+4. API CONNECTION:
+
+- All frontend forms MUST call backend endpoints
+- Handle:
+  - loading state
+  - success state
+  - error state
+
+5. RESPONSE VISIBILITY:
+
+- Results MUST be shown in UI
+- No hidden responses
+- No silent success
+
+6. PREMIUM ENFORCEMENT:
+
+- Backend MUST block non-premium users
+- Frontend MUST show upgrade modal on rejection
+
+7. TESTING REQUIREMENT:
+   Verify:
+
+Free user:
+
+- sees locked features
+- cannot access backend
+
+Premium user:
+
+- can fully use all premium tools
+
+8. ERROR SYSTEM:
+   All backend errors must return:
+
+{
+"error": true,
+"message": "Human-readable message",
+"details": "Exact technical issue",
+"source": "AI | PLAN | SYSTEM"
+}
+
+9. NO PLACEHOLDERS:
+
+- Do NOT return:
+  “Coming soon”
+  “Feature not implemented”
+
+Everything must be functional.
+
+FAILURE TO FOLLOW THESE RULES = INVALID SYSTEM
+
+---
+
+💎 1. PREMIUM FEATURES (PREMIUM PLAN ONLY — $99)
+
+Implement FULLY WORKING features:
+
+1. Document Drafting Prompts
+2. AI Application Drafting
+3. AI Resume Builder
+4. AI Career Guidance
+5. Document Templates Library
+
+---
+
+⚙️ BACKEND IMPLEMENTATION
+
+PLAN CHECK (MANDATORY IN EVERY ROUTE)
+
+if (user.plan !== "premium") {
+return {
+error: true,
+message: "This feature is available on the Premium plan. Upgrade to continue.",
+source: "PLAN"
+}
+}
+
+---
+
+ENDPOINTS
+
+1. Document Drafting
+
+POST /api/ai/draft-document
+
+- Input: document type + form data
+- Use GROQ API
+- Output: structured professional document
+
+---
+
+2. Application Drafting
+
+POST /api/ai/application
+
+- Input: role, skills, experience
+- Output: professional application
+
+---
+
+3. Resume Builder
+
+POST /api/ai/resume
+
+- Input: user info
+- Output: structured resume
+
+---
+
+4. Career Guidance
+
+POST /api/ai/career
+
+- Input: interests, education
+- Output:
+  - career paths
+  - industry insights
+  - future outlook
+
+---
+
+5. Templates Library
+
+GET /api/templates
+
+- Return templates list
+- All users: preview
+- Premium: full usage
+
+---
+
+🎨 2. DASHBOARD UI
+
+Create section: “AI Tools”
+
+Show ALL features to ALL users.
+
+---
+
+LOCK SYSTEM
+
+Non-premium users:
+
+- Buttons:
+  
+  - disabled / dimmed
+  - include 🔒 icon
+
+- On click:
+  Show modal:
+
+Title: Upgrade Required
+Message: Unlock this feature with Premium ($99)
+
+Buttons:
+
+- Upgrade Now
+- Cancel
+
+---
+
+Premium users:
+
+- Full access
+- Fully interactive
+- No restrictions
+
+---
+
+📦 3. PRICING PAGE
+
+Display ALL features in:
+
+- Free
+- Pro ($29)
+- Premium ($99)
+
+---
+
+VISUAL RULES
+
+Free & Pro:
+
+- Premium features:
+  - greyed out
+  - labeled “Premium only”
+
+Premium:
+
+- highlighted
+- active
+
+---
+
+🎯 4. LANDING PAGE UPDATE
+
+Add sections describing:
+
+- Assist you in drafting professional documents
+- Assist you in building resumes
+- Assist you with career insights
+- Access document templates
+
+IMPORTANT:
+
+- Use word “assist”
+- DO NOT imply replacing professionals
+
+---
+
+❌ 5. REMOVE LANGUAGE SYSTEM COMPLETELY
+
+REMOVE:
+
+- Language popup
+- Language settings
+- Translation logic
+- Stored language preferences
+
+FINAL STATE:
+→ App runs ONLY in English
+
+No leftover references allowed.
+
+---
+
+🔘 6. BUTTON BEHAVIOR (GLOBAL)
+
+- Every button must work
+- No inactive UI
+- Locked features must trigger upgrade modal
+
+---
+
+🔒 7. UPGRADE MODAL
+
+Reusable modal:
+
+Title: Upgrade Required
+Message: Unlock this feature with Premium ($99)
+
+Buttons:
+
+- Upgrade Now → redirect to pricing/payment
+- Cancel
+
+---
+
+⚡ 8. ERROR HANDLING
+
+- Backend returns structured errors
+- Frontend shows clean messages
+- NEVER expose technical details to user
+
+---
+
+🧱 9. ARCHITECTURE RULES
+
+- Frontend NEVER calls external APIs
+- Backend handles ALL AI calls
+- Maintain modular structure
+
+---
+
+🎯 10. UI QUALITY
+
+- Maintain SaaS-level UI
+- Card-based layout
+- Smooth spacing
+- Loading states for AI
+- Clean transitions
+
+---
+
+🚀 FINAL INSTRUCTION
+
+Implement EVERYTHING end-to-end:
+
+- Backend routes
+- Frontend UI
+- Plan enforcement
+- Feature locking
+- Upgrade flow
+- Real AI outputs
+
+DO NOT:
+
+- Skip backend logic
+- Leave incomplete features
+- Build fake UI
+
+This must behave as a REAL production SaaS system.
+
+---

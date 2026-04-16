@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nProvider } from "@/lib/i18n";
 import { SplashScreen } from "@/components/splash-screen";
-import { LanguagePopup } from "@/components/language-popup";
 import { TermsGate } from "@/components/terms-gate";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
@@ -20,13 +19,15 @@ import PricingPage from "@/pages/pricing";
 import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
+import DraftDocumentPage from "@/pages/ai/draft-document";
+import ApplicationPage from "@/pages/ai/application";
+import ResumePage from "@/pages/ai/resume";
+import CareerPage from "@/pages/ai/career";
+import TemplatesPage from "@/pages/ai/templates";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-    },
+    queries: { retry: 1, staleTime: 30_000 },
   },
 });
 
@@ -48,6 +49,11 @@ function Router() {
       <Route path="/settings">{() => <Gated><SettingsPage /></Gated>}</Route>
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
+      <Route path="/ai/draft">{() => <Gated><DraftDocumentPage /></Gated>}</Route>
+      <Route path="/ai/application">{() => <Gated><ApplicationPage /></Gated>}</Route>
+      <Route path="/ai/resume">{() => <Gated><ResumePage /></Gated>}</Route>
+      <Route path="/ai/career">{() => <Gated><CareerPage /></Gated>}</Route>
+      <Route path="/ai/templates">{() => <Gated><TemplatesPage /></Gated>}</Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -58,24 +64,15 @@ function AppGate() {
     return sessionStorage.getItem("contractai_splash_done") === "1";
   });
 
-  const [langChosen, setLangChosen] = useState(() => {
-    return localStorage.getItem("contractai_lang") !== null;
-  });
-
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("contractai_splash_done", "1");
     setSplashDone(true);
   }, []);
 
-  const handleLangComplete = useCallback(() => {
-    setLangChosen(true);
-  }, []);
-
   return (
     <>
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {splashDone && !langChosen && <LanguagePopup onComplete={handleLangComplete} />}
-      {splashDone && langChosen && (
+      {splashDone && (
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

@@ -8,6 +8,7 @@ import paymentsRouter from "./payments.js";
 import dashboardRouter from "./dashboard.js";
 import referralsRouter from "./referrals.js";
 import supportRouter from "./support.js";
+import aiRouter from "./ai.js";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use("/payments", paymentsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/referrals", referralsRouter);
 router.use("/support", supportRouter);
+router.use("/ai", aiRouter);
 
 export default router;

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,14 @@ export function TermsGate({ children }: { children: ReactNode }) {
   const { data: user, isLoading } = useGetMe();
   const [accepted, setAccepted] = useState(false);
 
-  if (isLoading || !user) return <>{children}</>;
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/auth", { replace: true });
+    }
+  }, [isLoading, user, setLocation]);
+
+  if (isLoading) return null;
+  if (!user) return null;
 
   const termsAccepted = (user as Record<string, unknown>).termsAccepted === true;
 
