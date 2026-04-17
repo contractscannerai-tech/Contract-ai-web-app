@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { RiskSpeedometer } from "@/components/risk-speedometer";
@@ -39,6 +40,7 @@ export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { lang } = useI18n();
   const queryClient = useQueryClient();
   const [analyzing, setAnalyzing] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
@@ -77,7 +79,7 @@ export default function ContractDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ language: "en" }),
+        body: JSON.stringify({ language: lang }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };
@@ -102,7 +104,7 @@ export default function ContractDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: msg, language: "en" }),
+        body: JSON.stringify({ message: msg, language: lang }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };

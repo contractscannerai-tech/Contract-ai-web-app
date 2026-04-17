@@ -239,6 +239,7 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       contractsLimit: baseLimit + (user.bonusScans ?? 0),
       referralCode: user.referralCode,
       termsAccepted: user.termsAccepted ?? false,
+      language: user.language ?? "en",
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -250,6 +251,30 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       userId: req.userId,
     }, "Get me: unhandled exception");
     res.status(500).json(structuredError("AUTH", "Failed to get user info", err instanceof Error ? err.message : String(err)));
+  }
+});
+
+const SUPPORTED_LANGS = new Set(["en", "es", "fr", "pt", "ar", "hi", "de", "zh"]);
+
+router.patch("/me/language", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { language } = req.body as { language?: string };
+  if (!language || !SUPPORTED_LANGS.has(language)) {
+    res.status(400).json(structuredError("AUTH", "Unsupported language code", `Received: ${String(language)}`));
+    return;
+  }
+  try {
+    await db.update(usersTable).set({ language, updatedAt: new Date() }).where(eq(usersTable.id, req.userId!));
+    req.log.info({ source: "AUTH", userId: req.userId, language }, "Language preference updated");
+    res.json({ success: true, language });
+  } catch (err) {
+    req.log.error({
+      error: true,
+      source: "AUTH",
+      message: "Failed to update language preference",
+      details: err instanceof Error ? err.message : String(err),
+      userId: req.userId,
+    }, "Update language: unhandled exception");
+    res.status(500).json(structuredError("AUTH", "Failed to update language", err instanceof Error ? err.message : String(err)));
   }
 });
 

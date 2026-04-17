@@ -8,6 +8,7 @@ import { User, Sparkles, Loader2, Copy, Check, ChevronLeft, AlertCircle, Downloa
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import AppLayout from "@/components/layout";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
@@ -15,6 +16,7 @@ export default function ResumePage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useI18n();
   const { data: user } = useGetMe();
   const logout = useLogout();
 
@@ -54,7 +56,7 @@ export default function ResumePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, email, phone, targetRole, summary, experience, education, skills }),
+        body: JSON.stringify({ name, email, phone, targetRole, summary, experience, education, skills, language: lang }),
       });
 
       const data = await res.json() as { success?: boolean; resume?: string; message?: string };

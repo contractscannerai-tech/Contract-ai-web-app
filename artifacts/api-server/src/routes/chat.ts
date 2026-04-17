@@ -58,7 +58,7 @@ router.post("/:contractId", requireAuth, chatLimiter, async (req: AuthenticatedR
       content: message,
     });
 
-    const LANG_NAMES: Record<string, string> = { en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ar: "Arabic", zh: "Chinese", ja: "Japanese" };
+    const LANG_NAMES: Record<string, string> = { en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ar: "Arabic", zh: "Chinese", hi: "Hindi", ja: "Japanese" };
     const langName = language && language !== "en" ? LANG_NAMES[language] ?? "" : "";
     const langRule = langName ? `\n\nIMPORTANT: You MUST respond entirely in ${langName}.` : "";
 

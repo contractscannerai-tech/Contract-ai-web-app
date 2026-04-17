@@ -31,7 +31,7 @@ type AnalysisResult = {
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English", es: "Spanish", fr: "French", de: "German",
-  pt: "Portuguese", ar: "Arabic", zh: "Chinese (Simplified)", ja: "Japanese",
+  pt: "Portuguese", ar: "Arabic", zh: "Chinese (Simplified)", hi: "Hindi", ja: "Japanese",
 };
 
 function buildSystemPrompt(plan: string, language?: string): string {

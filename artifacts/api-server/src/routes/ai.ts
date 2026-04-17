@@ -21,6 +21,18 @@ function planError(res: Response) {
   });
 }
 
+const LANG_NAMES: Record<string, string> = {
+  en: "English", es: "Spanish", fr: "French", de: "German",
+  pt: "Portuguese", ar: "Arabic", zh: "Chinese (Simplified)", hi: "Hindi",
+};
+
+function langRule(language?: string): string {
+  if (!language || language === "en") return "";
+  const name = LANG_NAMES[language];
+  if (!name) return "";
+  return `\n\nIMPORTANT: You MUST write the entire response in ${name}. Do not mix languages. All headings, body text, and lists must be in ${name}.`;
+}
+
 function aiError(res: Response, err: unknown) {
   const details = err instanceof Error ? err.message : String(err);
   res.status(500).json({
@@ -110,12 +122,13 @@ router.get("/templates", requireAuth, async (req: AuthenticatedRequest, res: Res
 router.post("/draft-document", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (req.userPlan !== "premium") { planError(res); return; }
 
-  const { documentType, title, parties, keyTerms, jurisdiction } = req.body as {
+  const { documentType, title, parties, keyTerms, jurisdiction, language } = req.body as {
     documentType?: string;
     title?: string;
     parties?: string;
     keyTerms?: string;
     jurisdiction?: string;
+    language?: string;
   };
 
   if (!documentType?.trim() || !parties?.trim()) {
@@ -148,7 +161,7 @@ Produce a thorough legal document with:
 3. 6–8 numbered clauses covering: Definitions, Obligations of each party, Payment terms (where applicable), Confidentiality (if applicable), Term and Termination, Limitation of Liability, Governing Law and Jurisdiction, Dispute Resolution
 4. Signature block for all parties
 
-Use professional legal language. Format with clear numbered section headings. Be complete — do not use placeholders like "[insert here]" for substantive content.`,
+Use professional legal language. Format with clear numbered section headings. Be complete — do not use placeholders like "[insert here]" for substantive content.${langRule(language)}`,
         },
       ],
       temperature: 0.2,
@@ -165,12 +178,13 @@ Use professional legal language. Format with clear numbered section headings. Be
 router.post("/application", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (req.userPlan !== "premium") { planError(res); return; }
 
-  const { role, company, skills, experience, motivation } = req.body as {
+  const { role, company, skills, experience, motivation, language } = req.body as {
     role?: string;
     company?: string;
     skills?: string;
     experience?: string;
     motivation?: string;
+    language?: string;
   };
 
   if (!role?.trim()) {
@@ -202,7 +216,7 @@ Write a 3–4 paragraph cover letter that:
 3. Explains their genuine motivation and what they bring uniquely to this role
 4. Closes confidently with a call to interview
 
-Tone: professional, confident, genuine — never generic. No clichés like "I am writing to express my interest." Make it memorable.`,
+Tone: professional, confident, genuine — never generic. No clichés like "I am writing to express my interest." Make it memorable.${langRule(language)}`,
         },
       ],
       temperature: 0.55,
@@ -219,7 +233,7 @@ Tone: professional, confident, genuine — never generic. No clichés like "I am
 router.post("/resume", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (req.userPlan !== "premium") { planError(res); return; }
 
-  const { name, email, phone, summary, experience, education, skills, targetRole } = req.body as {
+  const { name, email, phone, summary, experience, education, skills, targetRole, language } = req.body as {
     name?: string;
     email?: string;
     phone?: string;
@@ -228,6 +242,7 @@ router.post("/resume", requireAuth, async (req: AuthenticatedRequest, res: Respo
     education?: string;
     skills?: string;
     targetRole?: string;
+    language?: string;
   };
 
   if (!name?.trim()) {
@@ -273,7 +288,7 @@ ${email || "[email]"}${phone ? ` | ${phone}` : ""}${targetRole ? ` | ${targetRol
 ## Skills
 [Organized by category: Technical, Soft Skills, Tools, etc.]
 
-Use action verbs (Led, Built, Increased, Reduced, Managed). Quantify achievements. Optimize for ATS keyword matching for the target role.`,
+Use action verbs (Led, Built, Increased, Reduced, Managed). Quantify achievements. Optimize for ATS keyword matching for the target role.${langRule(language)}`,
         },
       ],
       temperature: 0.25,
@@ -290,12 +305,13 @@ Use action verbs (Led, Built, Increased, Reduced, Managed). Quantify achievement
 router.post("/career", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (req.userPlan !== "premium") { planError(res); return; }
 
-  const { currentRole, interests, education, yearsExp, goals } = req.body as {
+  const { currentRole, interests, education, yearsExp, goals, language } = req.body as {
     currentRole?: string;
     interests?: string;
     education?: string;
     yearsExp?: string;
     goals?: string;
+    language?: string;
   };
 
   if (!interests?.trim()) {
@@ -340,7 +356,7 @@ Concrete, week-by-week actions they can start immediately: learning, networking,
 ## 5-Year Outlook
 Realistic trajectory, senior roles they could reach, income potential, and emerging opportunities to position for.
 
-Be specific, practical, honest, and encouraging. Base advice on real market conditions.`,
+Be specific, practical, honest, and encouraging. Base advice on real market conditions.${langRule(language)}`,
         },
       ],
       temperature: 0.5,

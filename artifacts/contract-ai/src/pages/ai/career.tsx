@@ -8,6 +8,7 @@ import { TrendingUp, Sparkles, Loader2, ChevronLeft, AlertCircle } from "lucide-
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import AppLayout from "@/components/layout";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
@@ -15,6 +16,7 @@ export default function CareerPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useI18n();
   const { data: user } = useGetMe();
   const logout = useLogout();
 
@@ -50,7 +52,7 @@ export default function CareerPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ currentRole, interests, education, yearsExp, goals }),
+        body: JSON.stringify({ currentRole, interests, education, yearsExp, goals, language: lang }),
       });
 
       const data = await res.json() as { success?: boolean; guidance?: string; message?: string };

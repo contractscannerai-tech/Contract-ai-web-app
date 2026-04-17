@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { useTheme } from "@/lib/theme";
+import { useI18n, LANGUAGES, type LangCode } from "@/lib/i18n";
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const logout = useLogout();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const { lang, setLang, t } = useI18n();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -201,6 +203,27 @@ export default function SettingsPage() {
             >
               <Moon className="w-4 h-4" /> Dark
             </button>
+          </div>
+        </div>
+
+        <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6" data-testid="settings-language-section">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">{t("settings.language")}</h2>
+          <p className="text-sm text-muted-foreground mb-4">{t("settings.languageDesc")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => setLang(l.code as LangCode)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  lang === l.code ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
+                }`}
+                data-testid={`settings-lang-${l.code}`}
+              >
+                <span className="text-base leading-none">{l.flag}</span>
+                <span className="truncate">{l.nativeName}</span>
+              </button>
+            ))}
           </div>
         </div>
 

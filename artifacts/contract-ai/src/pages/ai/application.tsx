@@ -8,6 +8,7 @@ import { Send, Sparkles, Loader2, Copy, Check, ChevronLeft, AlertCircle } from "
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import AppLayout from "@/components/layout";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
@@ -15,6 +16,7 @@ export default function ApplicationPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useI18n();
   const { data: user } = useGetMe();
   const logout = useLogout();
 
@@ -51,7 +53,7 @@ export default function ApplicationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ role, company, skills, experience, motivation }),
+        body: JSON.stringify({ role, company, skills, experience, motivation, language: lang }),
       });
 
       const data = await res.json() as { success?: boolean; application?: string; message?: string };
