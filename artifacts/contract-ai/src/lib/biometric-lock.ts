@@ -52,6 +52,8 @@ export async function verifyBiometric(reason: string): Promise<boolean> {
       subtitle: "Confirm it's you",
       description: reason,
       useFallback: true,
+      negativeButtonText: "Cancel",
+      maxAttempts: 3,
     });
     return true;
   } catch {

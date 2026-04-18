@@ -45,6 +45,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache Gradle wrapper & caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            artifacts/contract-ai/android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('artifacts/contract-ai/android/**/*.gradle*', 'artifacts/contract-ai/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache Android SDK packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/build-cache
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('artifacts/contract-ai/android/variables.gradle', 'artifacts/contract-ai/android/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-
+
       - name: Build web app
         run: pnpm --filter @workspace/contract-ai run build
         env:
@@ -64,7 +84,8 @@ jobs:
 
       - name: Build debug APK
         working-directory: artifacts/contract-ai/android
-        run: ./gradlew assembleDebug --no-daemon
+        timeout-minutes: 30
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
