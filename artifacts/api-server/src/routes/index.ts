@@ -9,6 +9,7 @@ import dashboardRouter from "./dashboard.js";
 import referralsRouter from "./referrals.js";
 import supportRouter from "./support.js";
 import aiRouter from "./ai.js";
+import extrasRouter from "./extras.js";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use("/dashboard", dashboardRouter);
 router.use("/referrals", referralsRouter);
 router.use("/support", supportRouter);
 router.use("/ai", aiRouter);
+router.use(extrasRouter);
 
 export default router;

@@ -1,0 +1,119 @@
+# ContractAI — CORE IMPLEMENTATION (PART 1 / 2)
+
+IMPORTANT:
+- Do NOT remove or modify features.
+- Do NOT skip anything.
+- Implement exactly as written.
+- Ensure backend + frontend both fully functional.
+- This is production-level implementation.
+
+---
+
+BASE CONTEXT (DO NOT CHANGE EXISTING ARCHITECTURE):
+
+I am building a SaaS app called ContractAI. It is a React (or React Native for mobile) frontend with a Node.js/Express backend. Users upload contracts (PDF or image), and AI analyzes them using Claude/OpenAI API. There are 3 plans: Free, Pro ($29), Premium ($99). Existing authentication, dashboard, referrals, and scan system already exist.
+
+DO NOT BREAK EXISTING FEATURES.
+
+---
+
+FEATURE 1 — CONTRACT NEGOTIATION SUGGESTIONS
+(Add AI negotiation advice after contract analysis)
+
+- Add second AI call after analysis
+- Return JSON array:
+[{ clauseName, problem, suggestion, severity }]
+- Show in UI under analysis results
+- Available only for Pro + Premium
+- Locked UI for Free users with upgrade prompt
+
+---
+
+FEATURE 2 — CLAUSE-BY-CLAUSE INTERACTIVE MODE
+- Break contract into clauses using AI
+- Return JSON:
+[{ id, title, text, explanation, riskLevel, riskReason }]
+- Add Interactive Mode toggle in UI
+- Click clause → expand explanation + risk color
+- Safe = green, caution = yellow, risky = red
+- Available for ALL plans
+
+---
+
+FEATURE 3 — CONTRACT COMPARISON TOOL
+- New page: Compare Contracts
+- Upload 2 contracts
+- AI returns differences JSON:
+[{ section, changeType, originalText, newText, significance, explanation }]
+- Show added/removed/modified changes
+- Pro + Premium only
+
+---
+
+FEATURE 4 — RISK SCORE + PDF EXPORT
+
+PART A:
+- Add riskScore (0–100)
+- Add riskCategory:
+  Low Risk (80–100)
+  Moderate (50–79)
+  High (20–49)
+  Extreme (0–19)
+
+- Show animated circular risk UI
+
+PART B:
+- Generate PDF report endpoint:
+POST /api/analysis/:id/export-pdf
+- Include:
+  Summary, Risk Score, Clauses, Risks, Suggestions
+- Pro + Premium only
+
+---
+
+FEATURE 5 — CONTRACT DEADLINE REMINDERS
+- Extract contract dates using AI:
+importantDates[]
+- Store reminders in DB
+- Push notifications via Firebase
+- Reminder system with cron job
+- Pro + Premium only
+
+---
+
+FEATURE 6 — ASK YOUR CONTRACT (AI Q&A)
+- Endpoint: /api/analysis/:id/ask
+- AI answers ONLY from contract text
+- Must respect user language
+- Rate limits:
+  Free: 3/day
+  Pro: 20/day
+  Premium: unlimited
+
+---
+
+FEATURE 7 — CONTRACT TYPE DETECTION
+- Detect contract type before analysis
+- Return:
+contractType, parties, jurisdiction
+- Show badge in UI immediately
+- ALL plans
+
+---
+
+FEATURE 8 — SAMPLE CONTRACT DEMO (NO LOGIN)
+- Public endpoint:
+/api/demo/analyze
+- No authentication required
+- Uses predefined contract text
+- Rate limit 3/day per IP
+- Shows full analysis result
+- Landing page has “Try Demo”
+
+---
+
+FINAL REQUIREMENT FOR PART 1:
+- Everything must be fully functional
+- No fake UI buttons
+- No broken API calls
+- All AI responses must connect properly

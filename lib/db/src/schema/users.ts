@@ -15,6 +15,8 @@ export const usersTable = pgTable("users", {
   termsAccepted: boolean("terms_accepted").notNull().default(false),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   language: text("language").notNull().default("en"),
+  askQuestionsUsed: integer("ask_questions_used").notNull().default(0),
+  askResetAt: timestamp("ask_reset_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

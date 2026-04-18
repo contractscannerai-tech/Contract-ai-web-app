@@ -39,6 +39,7 @@ const upload = multer({
 const PLAN_LIMITS: Record<string, number> = {
   free: 3,
   pro: 20,
+  team: 999,
   premium: 999,
 };
 

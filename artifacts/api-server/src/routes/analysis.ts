@@ -3,6 +3,7 @@ import type { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import Groq from "groq-sdk";
 import { db, contractsTable, analysesTable, usersTable } from "@workspace/db";
+import type { ImportantDate, ClauseItem } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
@@ -10,7 +11,7 @@ import { analysisLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 
-const PLAN_LIMITS: Record<string, number> = { free: 3, pro: 20, premium: 999 };
+const PLAN_LIMITS: Record<string, number> = { free: 3, pro: 20, premium: 999, team: 999 };
 
 function structuredError(source: string, message: string, details: string) {
   return { error: true, message, details, source };
@@ -22,11 +23,25 @@ function getGroqClient() {
   return new Groq({ apiKey });
 }
 
+type RenegotiationItem = {
+  clauseName: string;
+  problem: string;
+  suggestion: string;
+  severity: "low" | "medium" | "high";
+};
+
 type AnalysisResult = {
   summary: string;
   risks: string[];
   key_clauses: string[];
-  renegotiation?: string[];
+  renegotiation?: RenegotiationItem[];
+  riskScore: number;
+  riskCategory: string;
+  contractType: string | null;
+  parties: string[];
+  jurisdiction: string | null;
+  importantDates: ImportantDate[];
+  clauses: ClauseItem[];
 };
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -34,79 +49,129 @@ const LANGUAGE_NAMES: Record<string, string> = {
   pt: "Portuguese", ar: "Arabic", zh: "Chinese (Simplified)", hi: "Hindi", ja: "Japanese",
 };
 
-function buildSystemPrompt(plan: string, language?: string): string {
-  const langName = language && language !== "en" ? LANGUAGE_NAMES[language] ?? "English" : "";
-  const langInstruction = langName ? `\n\nIMPORTANT: You MUST write ALL text values (summary, risks, key_clauses, renegotiation) in ${langName}. Do not use English for any text content.` : "";
-
-  if (plan === "free") {
-    return `You are a legal document scanner. Your ONLY job is to identify the NAMES and LOCATIONS of risk clauses — nothing more.
-
-You MUST NOT explain risks. You MUST NOT give advice. You MUST NOT describe what a clause means. Simply identify where risk clauses exist.
-
-Respond ONLY with a valid JSON object in this exact structure:
-{
-  "summary": "string",
-  "risks": ["string", "string", ...],
-  "key_clauses": ["string", "string", ...]
+function categorizeScore(score: number): string {
+  if (score >= 80) return "Low Risk";
+  if (score >= 50) return "Moderate";
+  if (score >= 20) return "High";
+  return "Extreme";
 }
 
-Rules (strictly enforced):
-- "summary": 1–2 sentences. State only what type of document this is and who the parties are. Nothing else.
-- "risks": 3–6 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Risk Name]". Example: "Section 4.2 — Termination Without Cause". Do NOT explain the risk. Do NOT say why it matters. Name only.
-- "key_clauses": 3–5 items. Each item must follow this format EXACTLY: "[Section/Clause Reference] — [Clause Name]". Example: "Section 7.1 — Non-Compete Clause". Name and location only. No explanations.
-- Respond with valid JSON only — no markdown, no extra text, no advice.${langInstruction}`;
+function buildSystemPrompt(plan: string, language?: string): string {
+  const langName = language && language !== "en" ? LANGUAGE_NAMES[language] ?? "English" : "";
+  const langInstruction = langName ? `\n\nIMPORTANT: You MUST write ALL human-readable text values (summary, risks, key_clauses, renegotiation fields, clause titles/explanations/riskReasons, importantDates descriptions) in ${langName}. Names of parties, dates (ISO format), jurisdictions, and contract type may stay in original form when appropriate.` : "";
+
+  const sharedJsonShape = `{
+  "summary": "string",
+  "risks": ["string"],
+  "key_clauses": ["string"],
+  "renegotiation": [{ "clauseName": "string", "problem": "string", "suggestion": "string", "severity": "low" | "medium" | "high" }],
+  "riskScore": 0-100,
+  "contractType": "string e.g. NDA, Employment, SaaS Subscription, Lease",
+  "parties": ["string"],
+  "jurisdiction": "string e.g. California, USA",
+  "importantDates": [{ "date": "YYYY-MM-DD or descriptive", "description": "string" }],
+  "clauses": [{ "id": "string", "title": "string", "text": "string (the actual clause text, max 400 chars)", "explanation": "string (plain English)", "riskLevel": "safe" | "caution" | "risky", "riskReason": "string" }]
+}`;
+
+  const clausesRule = `- "clauses": 5–12 items. For each clause: id (e.g. "c1"), title (short name), text (excerpt of original wording, max 400 chars), explanation (plain English meaning), riskLevel (safe/caution/risky), riskReason (one sentence).`;
+
+  const datesRule = `- "importantDates": ALL dates that matter — effective date, termination date, payment deadlines, renewal dates, notice periods. Empty array if none.`;
+  const typeRule = `- "contractType", "parties", "jurisdiction": always populate from the document. Use "Unknown" / [] / null only if truly absent.`;
+  const scoreRule = `- "riskScore": integer 0–100 (0 = catastrophic, 100 = extremely safe). Base on severity, count, and one-sidedness of risks.`;
+
+  if (plan === "free") {
+    return `You are a legal document scanner. Identify the NAMES and LOCATIONS of risk clauses and key provisions only. Do NOT explain or give advice in summary/risks/key_clauses fields. However, the structured fields (clauses[], importantDates[], contractType, parties, jurisdiction, riskScore) MUST still be populated — they are needed for the basic UI.
+
+Respond ONLY with a valid JSON object in this exact shape:
+${sharedJsonShape}
+
+Rules:
+- "summary": 1–2 sentences. State only what type of document this is and who the parties are.
+- "risks": 3–6 items. Format: "[Section X.X] — [Risk Name]" — name only, no explanation.
+- "key_clauses": 3–5 items. Format: "[Section X.X] — [Clause Name]" — name only.
+- "renegotiation": [] (empty array — locked feature for free plan).
+${clausesRule}
+${datesRule}
+${typeRule}
+${scoreRule}
+- Respond with valid JSON only — no markdown.${langInstruction}`;
   }
 
   if (plan === "pro") {
-    return `You are a senior legal analyst at a top-tier law firm. Your role is to produce clear, thorough, professional risk analysis for business clients who are not lawyers.
+    return `You are a senior legal analyst. Produce thorough, professional analysis for business clients.
 
-Analyze the provided contract text and respond ONLY with a valid JSON object in this exact structure:
-{
-  "summary": "string",
-  "risks": ["string", "string", ...],
-  "key_clauses": ["string", "string", ...]
-}
+Respond ONLY with a valid JSON object in this exact shape:
+${sharedJsonShape}
 
 Guidelines:
-- "summary": 3–5 sentences in plain English. Explain what the contract is, who the parties are, the primary purpose, and the overall risk posture.
-- "risks": 5–8 items. For each risk you MUST:
-  - Name the clause and its section reference
-  - Explain in simple, professional English exactly what the risk is
-  - Explain WHY it is dangerous to the signing party with specific consequences
-  - Reference actual dollar amounts, time periods, and party names from the contract where available
-  - Format: "[Section X.X — Clause Name]: [Plain-English explanation of the risk and why it matters to the signing party]"
-- "key_clauses": 5–8 items. Identify the most important provisions. For each:
-  - Name the clause and location
-  - Explain in plain English what it means and its practical impact
-  - Format: "[Section X.X — Clause Name]: [Plain-English explanation of what this means and its real-world impact]"
-- Be specific, thorough, and educational. The user is paying for expert analysis, not vague labels.
-- Respond with valid JSON only — no markdown fences, no extra text.${langInstruction}`;
+- "summary": 3–5 sentences. What it is, parties, purpose, overall risk posture.
+- "risks": 5–8 items. Format: "[Section X.X — Clause Name]: [Plain-English risk explanation with WHY it matters and specific consequences]".
+- "key_clauses": 5–8 items. Format: "[Section X.X — Clause Name]: [Plain-English meaning + practical impact]".
+- "renegotiation": 3–6 items. Each item is an object: clauseName (the clause), problem (what's wrong), suggestion (specific change to request), severity (low/medium/high).
+${clausesRule}
+${datesRule}
+${typeRule}
+${scoreRule}
+- Respond with valid JSON only — no markdown.${langInstruction}`;
   }
 
-  return `You are ContractAI's most advanced legal analyst — the equivalent of a senior partner at a top law firm combined with a skilled negotiator. Produce the most comprehensive contract analysis possible.
+  // premium / team
+  return `You are ContractAI's most advanced legal analyst — equivalent to a senior partner at a top law firm. Produce the most comprehensive analysis possible.
 
-Analyze the provided contract text and respond ONLY with a valid JSON object in this exact structure:
-{
-  "summary": "string",
-  "risks": ["string", "string", ...],
-  "key_clauses": ["string", "string", ...],
-  "renegotiation": ["string", "string", ...]
-}
+Respond ONLY with a valid JSON object in this exact shape:
+${sharedJsonShape}
 
 Guidelines:
-- "summary": 4–6 sentences. Cover: what the contract is, parties involved, primary purpose, overall risk posture, and one key observation the signing party must know immediately.
-- "risks": 6–10 items. For each risk:
-  - Reference the exact section/clause
-  - Explain in plain English what the risk is and the specific harm it could cause
-  - Include dollar exposure, time commitments, or legal consequences where present
-  - Format: "[Section X.X — Clause Name]: [Detailed explanation with specific consequences and why this matters most]"
-- "key_clauses": 5–8 items. Most important provisions with plain-English explanation of practical impact.
-  - Format: "[Section X.X — Clause Name]: [Explanation of what this means and how it affects the signing party day-to-day]"
-- "renegotiation": 4–7 actionable renegotiation recommendations the signing party should request before signing.
-  - Each recommendation must be specific and directly tied to a clause in this contract
-  - Format: "[Clause/Topic]: [Specific change to request — e.g., 'Request that Section 4.2 be amended to require 30 days written notice instead of immediate termination']"
-  - Cover: payment terms, liability caps, IP ownership, termination notice, non-compete scope/duration, auto-renewal opt-out, jurisdiction, and indemnification where applicable
-- Respond with valid JSON only — no markdown fences, no extra text.${langInstruction}`;
+- "summary": 4–6 sentences. What it is, parties, purpose, overall risk posture, and one critical observation the signing party must know immediately.
+- "risks": 6–10 items. Format: "[Section X.X — Clause Name]: [Detailed plain-English explanation with dollar exposure, time periods, legal consequences]".
+- "key_clauses": 5–8 items with full plain-English explanation of practical impact.
+- "renegotiation": 4–7 items. Each is an object: clauseName, problem, suggestion (specific actionable amendment), severity (low/medium/high). Cover payment terms, liability caps, IP, termination, non-compete, auto-renewal, jurisdiction, indemnification where applicable.
+${clausesRule}
+${datesRule}
+${typeRule}
+${scoreRule}
+- Respond with valid JSON only — no markdown.${langInstruction}`;
+}
+
+function coerceClauses(raw: unknown): ClauseItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 20).map((c, i) => {
+    const o = (c ?? {}) as Record<string, unknown>;
+    const rl = String(o["riskLevel"] ?? "safe").toLowerCase();
+    return {
+      id: String(o["id"] ?? `c${i + 1}`),
+      title: String(o["title"] ?? `Clause ${i + 1}`),
+      text: String(o["text"] ?? "").slice(0, 600),
+      explanation: String(o["explanation"] ?? ""),
+      riskLevel: (rl === "risky" || rl === "caution" || rl === "safe") ? rl as "safe" | "caution" | "risky" : "safe",
+      riskReason: String(o["riskReason"] ?? ""),
+    };
+  });
+}
+
+function coerceDates(raw: unknown): ImportantDate[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 20).map((d) => {
+    const o = (d ?? {}) as Record<string, unknown>;
+    return {
+      date: String(o["date"] ?? ""),
+      description: String(o["description"] ?? ""),
+    };
+  }).filter((d) => d.date && d.description);
+}
+
+function coerceRenegotiation(raw: unknown): RenegotiationItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 10).map((r) => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    const sev = String(o["severity"] ?? "medium").toLowerCase();
+    return {
+      clauseName: String(o["clauseName"] ?? "Clause"),
+      problem: String(o["problem"] ?? ""),
+      suggestion: String(o["suggestion"] ?? ""),
+      severity: (sev === "high" || sev === "low" || sev === "medium") ? sev as "low" | "medium" | "high" : "medium",
+    };
+  }).filter((r) => r.problem || r.suggestion);
 }
 
 async function analyzeWithGroq(text: string, plan: string, language?: string): Promise<AnalysisResult> {
@@ -120,59 +185,56 @@ async function analyzeWithGroq(text: string, plan: string, language?: string): P
       { role: "system", content: systemPrompt },
       { role: "user", content: `Please analyze the following contract:\n\n${truncatedText}` },
     ],
-    temperature: 0.05,
-    max_tokens: plan === "free" ? 1200 : 3000,
+    temperature: 0.1,
+    max_tokens: plan === "free" ? 2500 : 5000,
     response_format: { type: "json_object" },
   });
 
   const content = completion.choices[0]?.message?.content;
   if (!content) throw new Error("GROQ returned empty content — no message in choices[0]");
 
-  let parsed: { summary?: string; risks?: unknown[]; key_clauses?: unknown[]; renegotiation?: unknown[] };
+  let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(content) as typeof parsed;
+    parsed = JSON.parse(content) as Record<string, unknown>;
   } catch (jsonErr) {
     throw new Error(`GROQ response was not valid JSON: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`);
   }
 
+  const rawScore = Number(parsed["riskScore"]);
+  const riskScore = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 50;
+
   const result: AnalysisResult = {
-    summary: typeof parsed.summary === "string" && parsed.summary.trim()
-      ? parsed.summary
+    summary: typeof parsed["summary"] === "string" && (parsed["summary"] as string).trim()
+      ? parsed["summary"] as string
       : "Summary not available — the document may not be a standard contract.",
-    risks: Array.isArray(parsed.risks) && parsed.risks.length > 0
-      ? parsed.risks.map(String)
+    risks: Array.isArray(parsed["risks"]) && (parsed["risks"] as unknown[]).length > 0
+      ? (parsed["risks"] as unknown[]).map(String)
       : ["No significant risks identified in the provided text."],
-    key_clauses: Array.isArray(parsed.key_clauses) && parsed.key_clauses.length > 0
-      ? parsed.key_clauses.map(String)
+    key_clauses: Array.isArray(parsed["key_clauses"]) && (parsed["key_clauses"] as unknown[]).length > 0
+      ? (parsed["key_clauses"] as unknown[]).map(String)
       : ["No key clauses identified in the provided text."],
+    riskScore,
+    riskCategory: categorizeScore(riskScore),
+    contractType: typeof parsed["contractType"] === "string" ? parsed["contractType"] as string : null,
+    parties: Array.isArray(parsed["parties"]) ? (parsed["parties"] as unknown[]).map(String).slice(0, 10) : [],
+    jurisdiction: typeof parsed["jurisdiction"] === "string" ? parsed["jurisdiction"] as string : null,
+    importantDates: coerceDates(parsed["importantDates"]),
+    clauses: coerceClauses(parsed["clauses"]),
   };
 
-  if (plan === "premium" && Array.isArray(parsed.renegotiation) && parsed.renegotiation.length > 0) {
-    result.renegotiation = parsed.renegotiation.map(String);
+  // Negotiation suggestions: Pro + Premium + Team only
+  if (plan !== "free") {
+    const reneg = coerceRenegotiation(parsed["renegotiation"]);
+    if (reneg.length > 0) result.renegotiation = reneg;
   }
 
   return result;
 }
 
-function calculateRiskLevel(risks: string[]): "low" | "medium" | "high" {
-  if (risks.length === 0) return "low";
-  const riskText = risks.join(" ").toLowerCase();
-  const highRiskWords = [
-    "penalty", "liable", "liability", "termination", "forfeit",
-    "immediate", "unlimited", "indemnif", "damages", "lawsuit", "litigation",
-    "sue", "court", "jurisdiction", "arbitration", "injunction", "breach",
-  ];
-  const mediumRiskWords = [
-    "auto-renew", "automatic renewal", "non-compete", "non-solicitation",
-    "confidential", "intellectual property", "ip ownership", "exclusiv",
-    "restrict", "prohibit", "waive",
-  ];
-  const highCount = highRiskWords.filter((w) => riskText.includes(w)).length;
-  const mediumCount = mediumRiskWords.filter((w) => riskText.includes(w)).length;
-
-  if (highCount >= 2) return "high";
-  if (highCount >= 1 || mediumCount >= 2 || risks.length >= 5) return "medium";
-  return "low";
+function calculateRiskLevelFromScore(score: number): "low" | "medium" | "high" {
+  if (score >= 70) return "low";
+  if (score >= 40) return "medium";
+  return "high";
 }
 
 router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -244,30 +306,25 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
     let analysisResult: AnalysisResult;
     try {
       req.log.info({
-        source: "AI",
-        contractId: id,
-        model: "llama-3.3-70b-versatile",
-        plan: user.plan,
-        charCount: extractedText.length,
+        source: "AI", contractId: id, model: "llama-3.3-70b-versatile",
+        plan: user.plan, charCount: extractedText.length,
       }, `AI: sending contract to GROQ [${user.plan} plan]`);
 
       analysisResult = await analyzeWithGroq(extractedText, user.plan, language);
 
       req.log.info({
-        source: "AI",
-        contractId: id,
-        plan: user.plan,
+        source: "AI", contractId: id, plan: user.plan,
         riskCount: analysisResult.risks.length,
         clauseCount: analysisResult.key_clauses.length,
-        hasRenegotiation: !!analysisResult.renegotiation,
+        clauseBreakdownCount: analysisResult.clauses.length,
+        riskScore: analysisResult.riskScore,
+        contractType: analysisResult.contractType,
       }, "AI: GROQ analysis complete");
     } catch (aiErr) {
       const errMsg = aiErr instanceof Error ? aiErr.message : String(aiErr);
       req.log.error({
-        error: true, source: "AI",
-        message: "GROQ AI analysis failed",
-        details: errMsg,
-        stack: aiErr instanceof Error ? aiErr.stack : undefined,
+        error: true, source: "AI", message: "GROQ AI analysis failed",
+        details: errMsg, stack: aiErr instanceof Error ? aiErr.stack : undefined,
         contractId: id,
       }, "AI: GROQ error");
       await db.update(contractsTable).set({ status: "failed" }).where(eq(contractsTable.id, id));
@@ -275,7 +332,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       return;
     }
 
-    const riskLevel = calculateRiskLevel(analysisResult.risks);
+    const riskLevel = calculateRiskLevelFromScore(analysisResult.riskScore);
     const analysisId = uuidv4();
 
     await db.delete(analysesTable).where(eq(analysesTable.contractId, id));
@@ -288,6 +345,13 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       keyClauses: analysisResult.key_clauses,
       renegotiation: analysisResult.renegotiation ?? null,
       riskLevel,
+      riskScore: analysisResult.riskScore,
+      riskCategory: analysisResult.riskCategory,
+      contractType: analysisResult.contractType,
+      parties: analysisResult.parties,
+      jurisdiction: analysisResult.jurisdiction,
+      importantDates: analysisResult.importantDates,
+      clauses: analysisResult.clauses,
     }).returning();
 
     // PRIVACY: Clear extracted text immediately after AI analysis — never retain full document content
@@ -316,10 +380,8 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     req.log.error({
-      error: true, source: "SYSTEM",
-      message: "Unexpected error in analysis route",
-      details: errMsg,
-      stack: err instanceof Error ? err.stack : undefined,
+      error: true, source: "SYSTEM", message: "Unexpected error in analysis route",
+      details: errMsg, stack: err instanceof Error ? err.stack : undefined,
       contractId: id,
     }, "Analysis: unhandled exception");
     res.status(500).json(structuredError("SYSTEM", "Analysis failed", errMsg));
