@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nProvider } from "@/lib/i18n";
 import { SplashScreen } from "@/components/splash-screen";
-import { LanguagePopup } from "@/components/language-popup";
 import { TermsGate } from "@/components/terms-gate";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
@@ -72,27 +71,16 @@ function AppGate() {
   const [splashDone, setSplashDone] = useState(() => {
     return sessionStorage.getItem("contractai_splash_done") === "1";
   });
-  const [langChosen, setLangChosen] = useState(() => {
-    return localStorage.getItem("contractai.lang") !== null;
-  });
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("contractai_splash_done", "1");
     setSplashDone(true);
   }, []);
 
-  const handleLanguageChosen = useCallback(() => {
-    setLangChosen(true);
-  }, []);
-
-  const showLanguagePopup = splashDone && !langChosen;
-  const showApp = splashDone && langChosen;
-
   return (
     <>
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {showLanguagePopup && <LanguagePopup onComplete={handleLanguageChosen} />}
-      {showApp && (
+      {splashDone && (
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

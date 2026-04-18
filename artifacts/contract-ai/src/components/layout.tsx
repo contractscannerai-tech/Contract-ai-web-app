@@ -5,7 +5,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SupportWidget } from "@/components/support-widget";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n";
 
 const PRIVACY_URL = "https://contractscannerai-tech.github.io/Contractai-privacy-policy/";
@@ -50,7 +49,6 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
           <button onClick={() => setLocation(HOMEPAGE_PATH)} className="font-bold tracking-tight text-sidebar-foreground" data-testid="link-home">ContractAI</button>
         </div>
         <div className="flex items-center gap-1">
-          <LanguageSwitcher className="text-sidebar-foreground" />
           <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
         </div>
       </div>
@@ -114,7 +112,6 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
           <span className="font-bold text-sm text-sidebar-foreground">ContractAI</span>
         </div>
         <div className="flex items-center gap-1">
-          <LanguageSwitcher className="text-sidebar-foreground" />
           <ThemeToggle className="text-sidebar-foreground" />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

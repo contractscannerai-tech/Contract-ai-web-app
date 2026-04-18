@@ -448,59 +448,30 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<LangCode>(() => {
-    const initial = readStoredLang();
-    if (typeof document !== "undefined") applyDirection(initial);
-    return initial;
-  });
-
-  // On mount, fetch user language from DB — DB overrides localStorage if logged in.
+  // English-only build. Locale picking has been removed from the product.
   useEffect(() => {
-    let cancelled = false;
-    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-    fetch(`${base}/api/auth/me`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { language?: string } | null) => {
-        if (cancelled || !data?.language) return;
-        const code = data.language as string;
-        if ((TRANSLATIONS as Record<string, unknown>)[code]) {
-          const next = code as LangCode;
-          setLangState(next);
-          applyDirection(next);
-          window.localStorage.setItem(STORAGE_KEY, next);
-        }
-      })
-      .catch(() => { /* unauthenticated or offline — keep localStorage value */ });
-    return () => { cancelled = true; };
+    if (typeof document !== "undefined") {
+      document.documentElement.dir = "ltr";
+      document.documentElement.lang = "en";
+    }
+    if (typeof window !== "undefined") {
+      try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    }
   }, []);
 
-  const setLang = useCallback((code: LangCode) => {
-    if (!(TRANSLATIONS as Record<string, unknown>)[code]) return;
-    setLangState(code);
-    applyDirection(code);
-    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, code);
-    // Persist to DB (best-effort; ignore failure when unauthenticated).
-    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-    void fetch(`${base}/api/auth/me/language`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: code }),
-    }).catch(() => { /* ignore */ });
-  }, []);
+  const setLang = useCallback((_code: LangCode) => { /* no-op: English only */ }, []);
 
   const t = useCallback((key: string, params?: Record<string, string | number>) => {
-    const dict = TRANSLATIONS[lang] ?? EN;
-    let value = dict[key] ?? EN[key] ?? key;
+    let value = EN[key] ?? key;
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
         value = value.replace(`{${k}}`, String(v));
       });
     }
     return value;
-  }, [lang]);
+  }, []);
 
-  const value = useMemo<I18nContextValue>(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const value = useMemo<I18nContextValue>(() => ({ lang: "en", setLang, t }), [setLang, t]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
