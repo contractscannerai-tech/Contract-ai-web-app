@@ -15,6 +15,7 @@ import AppLayout from "@/components/layout";
 import { useTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { BiometricSetup } from "@/components/biometric-setup";
+import { BiometricLockToggle } from "@/components/biometric-lock-toggle";
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -273,7 +274,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
+          <BiometricLockToggle />
           <BiometricSetup />
         </div>
 

@@ -4,6 +4,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Native-app feel: kill browser-y behaviors */
+html, body {
+  overscroll-behavior: none;            /* no pull-to-refresh / bounce */
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;          /* no long-press image/link menu */
+  touch-action: manipulation;            /* removes 300ms tap delay on mobile */
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable selection inside actual text inputs and editable surfaces */
+input, textarea, [contenteditable="true"], [data-allow-select="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

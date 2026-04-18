@@ -77,8 +77,11 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.3.1",
+    "@capacitor/network": "^8.0.1",
     "@simplewebauthn/browser": "^13.3.0",
-    "@supabase/supabase-js": "^2.103.0"
+    "@supabase/supabase-js": "^2.103.0",
+    "capacitor-native-biometric": "^4.2.2"
   }
 }

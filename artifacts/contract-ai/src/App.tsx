@@ -8,6 +8,9 @@ import { I18nProvider } from "@/lib/i18n";
 import { SplashScreen } from "@/components/splash-screen";
 import { TermsGate } from "@/components/terms-gate";
 import { IntegrityGuard } from "@/components/integrity-guard";
+import { NetworkBanner } from "@/components/network-banner";
+import { BiometricLockGate } from "@/components/biometric-lock-gate";
+import { useNativeBackButton } from "@/lib/back-button";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -78,13 +81,18 @@ function AppGate() {
     setSplashDone(true);
   }, []);
 
+  useNativeBackButton();
+
   return (
     <>
+      <NetworkBanner />
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
       {splashDone && (
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <BiometricLockGate>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </BiometricLockGate>
       )}
       <Toaster />
       <IntegrityGuard />
