@@ -2,7 +2,7 @@ import { pgTable, text, integer, timestamp, boolean, pgEnum } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const planEnum = pgEnum("plan", ["free", "pro", "premium"]);
+export const planEnum = pgEnum("plan", ["free", "pro", "premium", "team"]);
 
 export const usersTable = pgTable("users", {
   id: text("id").primaryKey(),

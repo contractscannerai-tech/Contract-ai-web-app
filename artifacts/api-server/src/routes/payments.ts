@@ -84,14 +84,17 @@ function verifyDodoSignature(
 router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { plan } = req.body as { plan?: string };
 
-  if (!plan || !["pro", "premium"].includes(plan)) {
-    res.status(400).json(structuredError("PAYMENT", "Invalid plan", `plan=${plan ?? "undefined"} must be 'pro' or 'premium'`));
+  if (!plan || !["pro", "premium", "team"].includes(plan)) {
+    res.status(400).json(structuredError("PAYMENT", "Invalid plan", `plan=${plan ?? "undefined"} must be 'pro', 'premium' or 'team'`));
     return;
   }
 
   const DODO_API_KEY = process.env["DODO_API_KEY"];
-  const DODO_PRO_PLAN_ID = process.env["DODO_PRO_PLAN_ID"];
-  const DODO_PREMIUM_PLAN_ID = process.env["DODO_PREMIUM_PLAN_ID"];
+  const PLAN_ENV: Record<string, string> = {
+    pro: "DODO_PRO_PLAN_ID",
+    premium: "DODO_PREMIUM_PLAN_ID",
+    team: "DODO_TEAM_PLAN_ID",
+  };
 
   if (!DODO_API_KEY) {
     req.log.error({ error: true, source: "PAYMENT", message: "DODO_API_KEY missing" }, "Checkout: missing API key");
@@ -99,9 +102,9 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res: Res
     return;
   }
 
-  const productId = plan === "pro" ? DODO_PRO_PLAN_ID : DODO_PREMIUM_PLAN_ID;
+  const envName = PLAN_ENV[plan]!;
+  const productId = process.env[envName];
   if (!productId) {
-    const envName = plan === "pro" ? "DODO_PRO_PLAN_ID" : "DODO_PREMIUM_PLAN_ID";
     req.log.error({ error: true, source: "PAYMENT", message: `${envName} missing` }, "Checkout: missing product ID");
     res.status(500).json(structuredError("PAYMENT", `${plan} plan product ID not configured`, `${envName} missing`));
     return;
@@ -258,9 +261,9 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
 
     if (UPGRADE_EVENTS.has(event.type ?? "")) {
       const userId = event.data?.metadata?.userId;
-      const plan = event.data?.metadata?.plan as "pro" | "premium" | undefined;
+      const plan = event.data?.metadata?.plan as "pro" | "premium" | "team" | undefined;
 
-      if (userId && plan && ["pro", "premium"].includes(plan)) {
+      if (userId && plan && ["pro", "premium", "team"].includes(plan)) {
         await db.update(usersTable)
           .set({ plan, contractsUsed: 0 })
           .where(eq(usersTable.id, userId));
