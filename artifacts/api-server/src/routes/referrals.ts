@@ -116,9 +116,80 @@ router.post("/claim", requireAuth, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// ---------------------------------------------------------------------------
+// Synthetic "competitor" leaderboard entries.
+// While the real referral community is still small, we surface a pool of
+// believable competitors so the leaderboard feels active and competitive.
+// Their point totals slowly tick up over time (hourly drift) so the board
+// looks live, similar to how the AI insight bubbles rotate.
+//
+// As real users grow, fewer synthetic entries are shown — and any real user
+// that out-scores a synthetic one naturally outranks them via sort order.
+// The synthetic flag is NEVER exposed to the client.
+// ---------------------------------------------------------------------------
+type FakePersona = {
+  id: string;     // stable synthetic id (prefixed so it never collides w/ real uuids)
+  name: string;   // already-masked display name
+  endTarget: number; // points the persona will reach by the end of the month
+};
+
+// Personas are tiered roughly Diamond (>200) → Gold (>100) → Silver (>50) → Bronze (>10) → Newcomer.
+const FAKE_PERSONAS: FakePersona[] = [
+  { id: "syn-01", name: "ale***@gmail.com",      endTarget: 460 },
+  { id: "syn-02", name: "sar***@outlook.com",    endTarget: 420 },
+  { id: "syn-03", name: "raj***@gmail.com",      endTarget: 385 },
+  { id: "syn-04", name: "mar***@yahoo.com",      endTarget: 350 },
+  { id: "syn-05", name: "pri***@hotmail.com",    endTarget: 315 },
+  { id: "syn-06", name: "dav***@gmail.com",      endTarget: 285 },
+  { id: "syn-07", name: "emi***@icloud.com",     endTarget: 255 },
+  { id: "syn-08", name: "joh***@gmail.com",      endTarget: 230 },
+  { id: "syn-09", name: "lin***@outlook.com",    endTarget: 205 },
+  { id: "syn-10", name: "mic***@gmail.com",      endTarget: 180 },
+  { id: "syn-11", name: "nat***@yahoo.com",      endTarget: 160 },
+  { id: "syn-12", name: "oli***@gmail.com",      endTarget: 140 },
+  { id: "syn-13", name: "pat***@protonmail.com", endTarget: 125 },
+  { id: "syn-14", name: "qui***@gmail.com",      endTarget: 110 },
+  { id: "syn-15", name: "rob***@outlook.com",    endTarget:  95 },
+  { id: "syn-16", name: "sam***@gmail.com",      endTarget:  80 },
+  { id: "syn-17", name: "tom***@yahoo.com",      endTarget:  68 },
+  { id: "syn-18", name: "uma***@gmail.com",      endTarget:  58 },
+  { id: "syn-19", name: "vic***@hotmail.com",    endTarget:  48 },
+  { id: "syn-20", name: "wil***@gmail.com",      endTarget:  40 },
+  { id: "syn-21", name: "xav***@icloud.com",     endTarget:  33 },
+  { id: "syn-22", name: "yas***@gmail.com",      endTarget:  27 },
+  { id: "syn-23", name: "zac***@outlook.com",    endTarget:  22 },
+  { id: "syn-24", name: "amy***@gmail.com",      endTarget:  18 },
+  { id: "syn-25", name: "ben***@yahoo.com",      endTarget:  15 },
+  { id: "syn-26", name: "cla***@gmail.com",      endTarget:  12 },
+  { id: "syn-27", name: "dan***@outlook.com",    endTarget:  10 },
+  { id: "syn-28", name: "eva***@gmail.com",      endTarget:   8 },
+  { id: "syn-29", name: "fra***@protonmail.com", endTarget:   6 },
+  { id: "syn-30", name: "gin***@gmail.com",      endTarget:   5 },
+];
+
+// Returns synthetic entries with current point totals based on a smooth
+// progression from ~25% of endTarget at month start → 100% at month end.
+// Points climb hour-by-hour (in 3-hour buckets) so the board feels live —
+// like the AI insight bubbles — without flickering on every refresh.
+function buildFakeEntries(monthStart: Date, now: Date): { id: string; name: string; points: number; signups: number }[] {
+  const hoursInMonth = 30 * 24; // approximate
+  const hoursElapsed = Math.max(0, (now.getTime() - monthStart.getTime()) / (1000 * 60 * 60));
+  // Snap to 3-hour buckets so the same value is returned across multiple page loads
+  // within a 3-hour window — gives the "AI insight" feel of stable-then-update.
+  const bucketHours = Math.floor(hoursElapsed / 3) * 3;
+  const progress = Math.min(1, Math.max(0.25, bucketHours / hoursInMonth + 0.25));
+  return FAKE_PERSONAS.map((p) => {
+    const points = Math.max(1, Math.floor(p.endTarget * progress));
+    // Rough signup count: assume mixed signup (5pt) + occasional upgrade (20pt) → ~8pt avg
+    const signups = Math.max(1, Math.round(points / 8));
+    return { id: p.id, name: p.name, points, signups };
+  });
+}
+
 // Monthly leaderboard: top referrers by points earned this month
 router.get("/leaderboard", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    const now = new Date();
     const monthStart = new Date();
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(0, 0, 0, 0);
@@ -151,27 +222,69 @@ router.get("/leaderboard", requireAuth, async (req: AuthenticatedRequest, res: R
       for (const u of userRows.rows) userMap.set(u.id, { email: u.email });
     }
 
-    const leaderboard = rows.rows.map((r, idx) => {
+    // Real entries (from DB)
+    type MergedEntry = {
+      userId: string;
+      displayName: string;
+      points: number;
+      signups: number;
+      isYou: boolean;
+    };
+    const realEntries: MergedEntry[] = rows.rows.map((r) => {
       const email = userMap.get(r.referrer_id)?.email ?? "user";
       const masked = email.includes("@")
         ? `${email.split("@")[0]!.slice(0, 3)}***@${email.split("@")[1]}`
         : "user";
       return {
-        rank: idx + 1,
         userId: r.referrer_id,
         displayName: masked,
         points: r.points,
         signups: r.signups,
-        badge: badgeFor(r.points),
         isYou: r.referrer_id === req.userId,
       };
     });
 
-    // Find user's row even if not in top 50
-    const me = leaderboard.find((r) => r.isYou);
-    let myRank: { rank: number; points: number; badge: string } | null = me ? { rank: me.rank, points: me.points, badge: me.badge } : null;
-    if (!myRank) {
-      const myRows = await db.execute<{ points: number; rank: number }>(sql`
+    // Synthetic competitor entries — quantity tapers off as the real community grows.
+    // We always show enough total entries to make the board feel competitive (target ~25),
+    // but never more than the FAKE_PERSONAS pool size.
+    const TARGET_TOTAL = 25;
+    const targetFakes = Math.max(0, Math.min(FAKE_PERSONAS.length, TARGET_TOTAL - realEntries.length));
+    const allFakesSorted = buildFakeEntries(monthStart, now).sort((a, b) => b.points - a.points);
+    const visibleFakes = allFakesSorted.slice(0, targetFakes);
+    const fakeEntries: MergedEntry[] = visibleFakes.map((f) => ({
+      userId: f.id,
+      displayName: f.name,
+      points: f.points,
+      signups: f.signups,
+      isYou: false,
+    }));
+
+    // Merge, sort by points desc (real users naturally outrank fakes once they pass them),
+    // then assign ranks. Cap at top 50.
+    const merged = [...realEntries, ...fakeEntries]
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 50)
+      .map((e, idx) => ({
+        rank: idx + 1,
+        userId: e.userId,
+        displayName: e.displayName,
+        points: e.points,
+        signups: e.signups,
+        badge: badgeFor(e.points),
+        isYou: e.isYou,
+      }));
+
+    // Find user's row even if not in top 50 — rank is computed against merged set
+    // (real entries + synthetic competitors) so the user's perceived position is consistent.
+    let myRank: { rank: number; points: number; badge: string } | null = null;
+    const meInTop = merged.find((r) => r.isYou);
+    if (meInTop) {
+      myRank = { rank: meInTop.rank, points: meInTop.points, badge: meInTop.badge };
+    } else {
+      // The user is below top 50. Compute their points and the number of REAL
+      // users ahead via SQL (not limited to top 50), then add the count of
+      // VISIBLE synthetic competitors with strictly more points.
+      const myRows = await db.execute<{ points: number; real_ahead: number }>(sql`
         WITH monthly AS (
           SELECT
             ${referralsTable.referrerId} AS referrer_id,
@@ -183,20 +296,24 @@ router.get("/leaderboard", requireAuth, async (req: AuthenticatedRequest, res: R
           FROM ${referralsTable}
           WHERE ${referralsTable.createdAt} >= ${monthStart}
           GROUP BY ${referralsTable.referrerId}
-        )
-        SELECT points, RANK() OVER (ORDER BY points DESC) AS rank
-        FROM monthly
-        WHERE referrer_id = ${req.userId!}
-        LIMIT 1
+        ),
+        me AS (SELECT points FROM monthly WHERE referrer_id = ${req.userId!})
+        SELECT
+          (SELECT points FROM me) AS points,
+          (SELECT COUNT(*) FROM monthly WHERE points > (SELECT points FROM me))::int AS real_ahead
       `);
-      if (myRows.rows[0]) {
-        myRank = { rank: Number(myRows.rows[0].rank), points: myRows.rows[0].points, badge: badgeFor(myRows.rows[0].points) };
+      const r0 = myRows.rows[0];
+      if (r0 && r0.points != null) {
+        const myPts = r0.points;
+        const fakesAhead = visibleFakes.filter((f) => f.points > myPts).length;
+        const ahead = Number(r0.real_ahead) + fakesAhead;
+        myRank = { rank: ahead + 1, points: myPts, badge: badgeFor(myPts) };
       }
     }
 
     res.json({
       monthStart: monthStart.toISOString(),
-      leaderboard,
+      leaderboard: merged,
       myRank,
     });
   } catch (err) {
