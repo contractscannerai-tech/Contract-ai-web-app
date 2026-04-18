@@ -1,9 +1,9 @@
 import { Router } from "express";
 import type { Response, Request } from "express";
 import crypto from "crypto";
-import { db, usersTable, referralsTable } from "@workspace/db";
+import { db, usersTable, referralsTable, teamsTable, teamMembersTable, teamInvitesTable } from "@workspace/db";
 import { v4 as uuidv4 } from "uuid";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { ensureTeamForOwner } from "./teams.js";
@@ -321,17 +321,47 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
       const userId = event.data?.metadata?.userId;
 
       if (userId) {
-        const current = await db.select({ plan: usersTable.plan })
+        const current = await db.select({ plan: usersTable.plan, teamId: usersTable.teamId })
           .from(usersTable)
           .where(eq(usersTable.id, userId))
           .limit(1);
 
         if (current[0] && current[0].plan !== "free") {
-          await db.update(usersTable)
-            .set({ plan: "free" })
-            .where(eq(usersTable.id, userId));
+          // If owner of a Team plan: downgrade ALL team members to free and dismantle the team
+          if (current[0].plan === "team" && current[0].teamId) {
+            const teamId = current[0].teamId;
+            const teamRows = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+            const team = teamRows[0];
 
-          req.log.info({ source: "PAYMENT", userId, prevPlan: current[0].plan, eventType: event.type }, "Webhook: subscription ended — downgraded to free");
+            if (team && team.ownerId === userId) {
+              const memberRows = await db.select({ userId: teamMembersTable.userId })
+                .from(teamMembersTable)
+                .where(eq(teamMembersTable.teamId, teamId));
+              const memberIds = memberRows.map((m) => m.userId);
+
+              if (memberIds.length > 0) {
+                await db.update(usersTable)
+                  .set({ plan: "free", teamId: null })
+                  .where(inArray(usersTable.id, memberIds));
+              }
+
+              await db.delete(teamMembersTable).where(eq(teamMembersTable.teamId, teamId));
+              await db.delete(teamInvitesTable).where(eq(teamInvitesTable.teamId, teamId));
+              await db.delete(teamsTable).where(eq(teamsTable.id, teamId));
+
+              req.log.info({ source: "PAYMENT", userId, teamId, memberCount: memberIds.length, eventType: event.type }, "Webhook: Team subscription ended — all members downgraded and team dismantled");
+            } else {
+              await db.update(usersTable)
+                .set({ plan: "free" })
+                .where(eq(usersTable.id, userId));
+              req.log.info({ source: "PAYMENT", userId, prevPlan: current[0].plan, eventType: event.type }, "Webhook: non-owner team member downgraded");
+            }
+          } else {
+            await db.update(usersTable)
+              .set({ plan: "free" })
+              .where(eq(usersTable.id, userId));
+            req.log.info({ source: "PAYMENT", userId, prevPlan: current[0].plan, eventType: event.type }, "Webhook: subscription ended — downgraded to free");
+          }
         }
       } else {
         req.log.warn({
