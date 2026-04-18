@@ -12,7 +12,7 @@ interface FeatureDef {
 }
 
 interface FeatureGridProps {
-  userPlan: "free" | "pro" | "premium";
+  userPlan: "free" | "pro" | "premium" | "team";
 }
 
 function ScanIcon() {
@@ -169,7 +169,130 @@ const AI_TOOL_FEATURES: FeatureDef[] = [
   },
 ];
 
-const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, premium: 2 };
+const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, premium: 2, team: 2 };
+
+function MessageSquareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function GitCompareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" />
+      <path d="M13 6h3a2 2 0 0 1 2 2v7" /><path d="M11 18H8a2 2 0 0 1-2-2V9" />
+    </svg>
+  );
+}
+
+function HandshakeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m11 17 2 2a1 1 0 1 0 3-3" />
+      <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" />
+      <path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" />
+      <path d="M3 4h8" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function TrophyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  );
+}
+
+const POWER_FEATURES: FeatureDef[] = [
+  {
+    id: "ai-chat-shortcut",
+    label: "AI Assistant Chat",
+    description: "Personal AI that remembers you",
+    icon: <MessageSquareIcon />,
+    requiredPlan: "premium",
+    action: () => { window.dispatchEvent(new CustomEvent("contractai:open-chat")); },
+  },
+  {
+    id: "compare-contracts",
+    label: "Compare Contracts",
+    description: "Side-by-side comparison of two docs",
+    icon: <GitCompareIcon />,
+    requiredPlan: "pro",
+    action: (nav) => nav("/contracts"),
+  },
+  {
+    id: "renegotiation",
+    label: "Renegotiation Tips",
+    description: "AI-suggested rewrites for risky clauses",
+    icon: <HandshakeIcon />,
+    requiredPlan: "pro",
+    action: (nav) => nav("/contracts"),
+  },
+  {
+    id: "pdf-export",
+    label: "Export PDF Report",
+    description: "Download analysis as a polished PDF",
+    icon: <DownloadIcon />,
+    requiredPlan: "pro",
+    action: (nav) => nav("/contracts"),
+  },
+  {
+    id: "history",
+    label: "Activity History",
+    description: "Audit trail of every analysis",
+    icon: <ClockIcon />,
+    requiredPlan: "pro",
+    action: (nav) => nav("/history"),
+  },
+  {
+    id: "team-management",
+    label: "Team Management",
+    description: "Invite up to 5 members",
+    icon: <UsersIcon />,
+    requiredPlan: "premium",
+    action: (nav) => nav("/team"),
+  },
+  {
+    id: "leaderboard",
+    label: "Referral Leaderboard",
+    description: "See top referrers and your rank",
+    icon: <TrophyIcon />,
+    requiredPlan: "free",
+    action: (nav) => nav("/leaderboard"),
+  },
+];
 
 function FeatureCard({ feature, userPlan, onLock }: { feature: FeatureDef; userPlan: string; onLock: (f: FeatureDef) => void }) {
   const [, setLocation] = useLocation();
@@ -236,12 +359,24 @@ export function FeatureGrid({ userPlan }: FeatureGridProps) {
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">AI Tools</p>
           <p className="text-xs text-muted-foreground mb-3">
-            {userPlan !== "premium"
-              ? "🔒 AI Tools require the Legal Partner plan"
-              : "✓ Full access — all AI tools unlocked"}
+            {userPlan !== "premium" && userPlan !== "team"
+              ? "Locked — included with Legal Partner plan"
+              : "Full access — all AI tools unlocked"}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {AI_TOOL_FEATURES.map((feature) => (
+              <FeatureCard key={feature.id} feature={feature} userPlan={userPlan} onLock={setModalFeature} />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Power Tools</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Quick access to every feature you've unlocked.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {POWER_FEATURES.map((feature) => (
               <FeatureCard key={feature.id} feature={feature} userPlan={userPlan} onLock={setModalFeature} />
             ))}
           </div>

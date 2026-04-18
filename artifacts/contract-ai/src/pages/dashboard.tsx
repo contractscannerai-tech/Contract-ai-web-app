@@ -101,7 +101,7 @@ export default function DashboardPage() {
               </button>
             )}
           </div>
-          <FeatureGrid userPlan={(user?.plan as "free" | "pro" | "premium") ?? "free"} />
+          <FeatureGrid userPlan={(user?.plan as "free" | "pro" | "premium" | "team") ?? "free"} />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

@@ -20,6 +20,9 @@ export const usersTable = pgTable("users", {
   askResetAt: timestamp("ask_reset_at", { withTimezone: true }).notNull().defaultNow(),
   reviewPromptShown: boolean("review_prompt_shown").notNull().default(false),
   teamId: text("team_id"),
+  displayName: text("display_name"),
+  profession: text("profession"),
+  chatPersonalization: text("chat_personalization"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

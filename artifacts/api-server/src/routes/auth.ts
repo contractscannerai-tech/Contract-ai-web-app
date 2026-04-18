@@ -242,6 +242,9 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       language: user.language ?? "en",
       reviewPromptShown: user.reviewPromptShown ?? false,
       teamId: user.teamId ?? null,
+      displayName: user.displayName ?? null,
+      profession: user.profession ?? null,
+      chatPersonalization: user.chatPersonalization ?? null,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -277,6 +280,44 @@ router.patch("/me/language", requireAuth, async (req: AuthenticatedRequest, res:
       userId: req.userId,
     }, "Update language: unhandled exception");
     res.status(500).json(structuredError("AUTH", "Failed to update language", err instanceof Error ? err.message : String(err)));
+  }
+});
+
+router.patch("/me/profile", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { displayName, profession, chatPersonalization } = req.body as {
+    displayName?: string | null;
+    profession?: string | null;
+    chatPersonalization?: string | null;
+  };
+
+  const update: Record<string, unknown> = { updatedAt: new Date() };
+  if (displayName !== undefined) {
+    if (displayName !== null && displayName.length > 60) {
+      res.status(400).json(structuredError("VALIDATION", "Name is too long (max 60 chars)", `length=${displayName.length}`));
+      return;
+    }
+    update["displayName"] = displayName ? displayName.trim().slice(0, 60) : null;
+  }
+  if (profession !== undefined) {
+    if (profession !== null && profession.length > 80) {
+      res.status(400).json(structuredError("VALIDATION", "Profession is too long (max 80 chars)", `length=${profession.length}`));
+      return;
+    }
+    update["profession"] = profession ? profession.trim().slice(0, 80) : null;
+  }
+  if (chatPersonalization !== undefined) {
+    if (chatPersonalization !== null && chatPersonalization.length > 800) {
+      res.status(400).json(structuredError("VALIDATION", "Memory note is too long (max 800 chars)", `length=${chatPersonalization.length}`));
+      return;
+    }
+    update["chatPersonalization"] = chatPersonalization ? chatPersonalization.trim().slice(0, 800) : null;
+  }
+
+  try {
+    await db.update(usersTable).set(update).where(eq(usersTable.id, req.userId!));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json(structuredError("AUTH", "Failed to update profile", err instanceof Error ? err.message : String(err)));
   }
 });
 
