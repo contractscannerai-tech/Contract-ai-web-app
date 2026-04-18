@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { I18nProvider } from "@/lib/i18n";
 import { SplashScreen } from "@/components/splash-screen";
 import { TermsGate } from "@/components/terms-gate";
+import { IntegrityGuard } from "@/components/integrity-guard";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -86,6 +87,7 @@ function AppGate() {
         </WouterRouter>
       )}
       <Toaster />
+      <IntegrityGuard />
     </>
   );
 }

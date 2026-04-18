@@ -7,7 +7,7 @@ interface FeatureDef {
   label: string;
   description: string;
   icon: React.ReactNode;
-  requiredPlan: "free" | "pro" | "premium";
+  requiredPlan: "free" | "pro" | "premium" | "team";
   action?: (setLocation: (path: string) => void) => void;
 }
 
@@ -169,7 +169,8 @@ const AI_TOOL_FEATURES: FeatureDef[] = [
   },
 ];
 
-const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, premium: 2, team: 2 };
+// Team plan includes premium features (rank >= premium) AND adds team-only features.
+const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, premium: 2, team: 3 };
 
 function MessageSquareIcon() {
   return (
@@ -281,7 +282,7 @@ const POWER_FEATURES: FeatureDef[] = [
     label: "Team Management",
     description: "Invite up to 5 members",
     icon: <UsersIcon />,
-    requiredPlan: "premium",
+    requiredPlan: "team",
     action: (nav) => nav("/team"),
   },
   {
@@ -320,7 +321,7 @@ function FeatureCard({ feature, userPlan, onLock }: { feature: FeatureDef; userP
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl backdrop-blur-[2px] bg-background/40 border border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <LockIcon />
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-            {feature.requiredPlan === "pro" ? "Pro" : "Premium"}
+            {feature.requiredPlan === "pro" ? "Pro" : feature.requiredPlan === "team" ? "Team" : "Premium"}
           </span>
         </div>
       )}

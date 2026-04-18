@@ -6,7 +6,7 @@ interface UpgradeModalProps {
   open: boolean;
   onClose: () => void;
   feature: string;
-  requiredPlan: "pro" | "premium";
+  requiredPlan: "pro" | "premium" | "team";
 }
 
 const PLAN_DETAILS = {
@@ -37,6 +37,21 @@ const PLAN_DETAILS = {
       "AI chat — unlimited questions",
       "Document Drafting, Resume Builder, Career Guidance",
       "Full Document Templates Library",
+    ],
+  },
+  team: {
+    name: "Team",
+    icon: <Crown className="w-5 h-5" />,
+    price: "$399/month",
+    color: "text-violet-600",
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/20",
+    perks: [
+      "Up to 5 team members included",
+      "Each member gets full Legal Partner access",
+      "Shared workspace and contract history",
+      "Owner controls members & billing",
+      "Priority support",
     ],
   },
 };
