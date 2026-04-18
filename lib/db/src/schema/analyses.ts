@@ -20,7 +20,7 @@ export const analysesTable = pgTable("analyses", {
   summary: text("summary").notNull(),
   risks: text("risks").array().notNull(),
   keyClauses: text("key_clauses").array().notNull(),
-  renegotiation: jsonb("renegotiation").$type<Array<{ clauseName: string; problem: string; suggestion: string; severity: "low" | "medium" | "high" }> | null>(),
+  renegotiation: jsonb("renegotiation_v2").$type<Array<{ clauseName: string; problem: string; suggestion: string; severity: "low" | "medium" | "high" }> | null>(),
   riskLevel: riskLevelEnum("risk_level").notNull().default("low"),
   riskScore: integer("risk_score").notNull().default(50),
   riskCategory: text("risk_category").notNull().default("Moderate"),
