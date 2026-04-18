@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import Groq from "groq-sdk";
-import { db, contractsTable, analysesTable, usersTable } from "@workspace/db";
+import { db, contractsTable, analysesTable, usersTable, teamsTable, auditLogsTable } from "@workspace/db";
 import type { ImportantDate, ClauseItem } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
@@ -222,8 +222,8 @@ async function analyzeWithGroq(text: string, plan: string, language?: string): P
     clauses: coerceClauses(parsed["clauses"]),
   };
 
-  // Negotiation suggestions: Pro + Premium + Team only
-  if (plan !== "free") {
+  // Negotiation suggestions: Pro + Premium only (excluded for free and team plans)
+  if (plan === "pro" || plan === "premium") {
     const reneg = coerceRenegotiation(parsed["renegotiation"]);
     if (reneg.length > 0) result.renegotiation = reneg;
   }
@@ -270,15 +270,46 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       return;
     }
 
-    const baseLimit = PLAN_LIMITS[user.plan] ?? 3;
-    const limit = baseLimit + (user.bonusScans ?? 0);
-    if (user.contractsUsed >= limit) {
-      res.status(403).json(structuredError(
-        "PLAN",
-        `Your ${user.plan} plan allows ${limit} contract analysis${limit === 1 ? "" : "es"} per month. Please upgrade to analyze more.`,
-        `contractsUsed=${user.contractsUsed} limit=${limit} plan=${user.plan}`
-      ));
-      return;
+    let team: typeof teamsTable.$inferSelect | undefined;
+    if (user.plan === "team") {
+      if (!user.teamId) {
+        res.status(403).json(structuredError("TEAM", "You are on the Team plan but have not been added to a team yet", `userId=${req.userId}`));
+        return;
+      }
+      const teamRows = await db.select().from(teamsTable).where(eq(teamsTable.id, user.teamId)).limit(1);
+      team = teamRows[0];
+      if (!team) {
+        res.status(404).json(structuredError("TEAM", "Your team could not be found", `teamId=${user.teamId}`));
+        return;
+      }
+      // Monthly reset for team scans
+      const now = new Date();
+      const monthsApart = (now.getUTCFullYear() - team.scansResetAt.getUTCFullYear()) * 12 + (now.getUTCMonth() - team.scansResetAt.getUTCMonth());
+      if (monthsApart >= 1) {
+        await db.update(teamsTable)
+          .set({ scansUsed: 0, scansResetAt: now })
+          .where(eq(teamsTable.id, team.id));
+        team = { ...team, scansUsed: 0, scansResetAt: now };
+      }
+      if (team.scansUsed >= team.scansLimit) {
+        res.status(403).json(structuredError(
+          "PLAN",
+          `Your team's monthly shared scan pool (${team.scansLimit}) is exhausted. It resets on the 1st of next month.`,
+          `team=${team.id} used=${team.scansUsed} limit=${team.scansLimit}`
+        ));
+        return;
+      }
+    } else {
+      const baseLimit = PLAN_LIMITS[user.plan] ?? 3;
+      const limit = baseLimit + (user.bonusScans ?? 0);
+      if (user.contractsUsed >= limit) {
+        res.status(403).json(structuredError(
+          "PLAN",
+          `Your ${user.plan} plan allows ${limit} contract analysis${limit === 1 ? "" : "es"} per month. Please upgrade to analyze more.`,
+          `contractsUsed=${user.contractsUsed} limit=${limit} plan=${user.plan}`
+        ));
+        return;
+      }
     }
 
     const extractedText = contract.extractedText?.trim() ?? "";
@@ -359,21 +390,48 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       .set({ status: "analyzed", analyzedAt: new Date(), extractedText: null })
       .where(eq(contractsTable.id, id));
 
-    const newContractsUsed = user.contractsUsed + 1;
-    const updateData: Record<string, unknown> = { contractsUsed: newContractsUsed };
+    if (user.plan === "team" && team) {
+      await db.update(teamsTable)
+        .set({ scansUsed: team.scansUsed + 1 })
+        .where(eq(teamsTable.id, team.id));
+    } else {
+      const newContractsUsed = user.contractsUsed + 1;
+      const updateData: Record<string, unknown> = { contractsUsed: newContractsUsed };
 
-    if (newContractsUsed === 15) {
-      updateData.bonusScans = (user.bonusScans ?? 0) + 4;
-      req.log.info({ source: "REWARD", userId: req.userId, bonus: 4 }, "Scan reward: +4 bonus scans for reaching 15 analyses this month");
+      if (newContractsUsed === 15) {
+        updateData.bonusScans = (user.bonusScans ?? 0) + 4;
+        req.log.info({ source: "REWARD", userId: req.userId, bonus: 4 }, "Scan reward: +4 bonus scans for reaching 15 analyses this month");
+      }
+
+      await db.update(usersTable)
+        .set(updateData)
+        .where(eq(usersTable.id, req.userId!));
     }
 
-    await db.update(usersTable)
-      .set(updateData)
-      .where(eq(usersTable.id, req.userId!));
+    // Write to audit log (best-effort — never block response)
+    try {
+      await db.insert(auditLogsTable).values({
+        id: uuidv4(),
+        userId: req.userId!,
+        action: "analyze",
+        contractId: id,
+        riskScore: analysisResult.riskScore,
+        contractType: analysisResult.contractType,
+        metadata: {
+          riskScore: analysisResult.riskScore,
+          riskCategory: analysisResult.riskCategory,
+          contractType: analysisResult.contractType,
+          filename: contract.filename,
+          contractId: id,
+        },
+      });
+    } catch (auditErr) {
+      req.log.warn({ source: "AUDIT", details: auditErr instanceof Error ? auditErr.message : String(auditErr) }, "Audit: log write failed");
+    }
 
     req.log.info({
       source: "AI", contractId: id, riskLevel, analysisId,
-      plan: user.plan, creditsUsed: newContractsUsed,
+      plan: user.plan,
     }, "AI: analysis complete — extracted text purged, credit charged");
 
     res.json(analysis);

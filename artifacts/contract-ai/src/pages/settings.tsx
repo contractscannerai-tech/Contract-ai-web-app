@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import { useTheme } from "@/lib/theme";
 import { useI18n, LANGUAGES, type LangCode } from "@/lib/i18n";
+import { BiometricSetup } from "@/components/biometric-setup";
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -291,6 +292,10 @@ export default function SettingsPage() {
               <FileText className="w-4 h-4" /> Upload new contract
             </Button>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <BiometricSetup />
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">

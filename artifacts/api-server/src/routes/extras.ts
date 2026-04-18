@@ -9,7 +9,7 @@ import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
 
-const ASK_LIMITS: Record<string, number> = { free: 3, pro: 20, premium: 999, team: 999 };
+const ASK_LIMITS: Record<string, number> = { free: 3, pro: 20, premium: 999, team: 5 };
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English", es: "Spanish", fr: "French", de: "German",
@@ -59,7 +59,7 @@ router.post("/analysis/:id/ask", requireAuth, async (req: AuthenticatedRequest, 
     }
 
     const limit = ASK_LIMITS[user.plan] ?? 3;
-    const isUnlimited = user.plan === "premium" || user.plan === "team";
+    const isUnlimited = user.plan === "premium";
     if (!isUnlimited && askUsed >= limit) {
       res.status(403).json(structuredError(
         "PLAN",
@@ -144,8 +144,10 @@ ${contextParts.join("\n\n")}`;
 router.post("/analysis/:id/export-pdf", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params as { id: string };
 
-  if (req.userPlan === "free") {
-    res.status(403).json(structuredError("PLAN", "PDF export requires Pro or Legal Partner plan", `plan=${req.userPlan}`));
+  if (req.userPlan === "free" || req.userPlan === "team") {
+    res.status(403).json(structuredError("PLAN", req.userPlan === "team"
+      ? "PDF export is not included on the Team plan — upgrade to Legal Partner to export"
+      : "PDF export requires Pro or Legal Partner plan", `plan=${req.userPlan}`));
     return;
   }
 
@@ -269,8 +271,10 @@ router.post("/analysis/:id/export-pdf", requireAuth, async (req: AuthenticatedRe
 router.post("/contracts/compare", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { contractIdA, contractIdB, language } = req.body as { contractIdA?: string; contractIdB?: string; language?: string };
 
-  if (req.userPlan === "free") {
-    res.status(403).json(structuredError("PLAN", "Comparison requires Pro or Legal Partner plan", `plan=${req.userPlan}`));
+  if (req.userPlan === "free" || req.userPlan === "team") {
+    res.status(403).json(structuredError("PLAN", req.userPlan === "team"
+      ? "Contract comparison is not included on the Team plan — upgrade to Legal Partner to compare"
+      : "Comparison requires Pro or Legal Partner plan", `plan=${req.userPlan}`));
     return;
   }
   if (!contractIdA || !contractIdB || contractIdA === contractIdB) {

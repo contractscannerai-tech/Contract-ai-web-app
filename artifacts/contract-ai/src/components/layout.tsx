@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { FileText, LayoutDashboard, FolderOpen, Settings, Upload, CreditCard, LogOut, Menu, X } from "lucide-react";
+import { FileText, LayoutDashboard, FolderOpen, Settings, Upload, CreditCard, LogOut, Menu, X, History, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,8 @@ interface AppLayoutProps {
   onLogout?: () => void;
 }
 
+const HOMEPAGE_PATH = "/";
+
 const planColors: Record<string, string> = {
   free: "text-muted-foreground",
   pro: "text-primary",
@@ -31,6 +33,9 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
     { label: t("nav.dashboard"), href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: t("nav.contracts"), href: "/contracts", icon: <FolderOpen className="w-4 h-4" /> },
     { label: t("nav.upload"), href: "/contracts/upload", icon: <Upload className="w-4 h-4" /> },
+    { label: "History", href: "/history", icon: <History className="w-4 h-4" /> },
+    { label: "Leaderboard", href: "/leaderboard", icon: <Trophy className="w-4 h-4" /> },
+    ...(user?.plan === "team" ? [{ label: "Team", href: "/team", icon: <Users className="w-4 h-4" /> }] : []),
     { label: t("nav.pricing"), href: "/pricing", icon: <CreditCard className="w-4 h-4" /> },
     { label: t("nav.settings"), href: "/settings", icon: <Settings className="w-4 h-4" /> },
   ];
@@ -42,7 +47,7 @@ export default function AppLayout({ children, user, onLogout }: AppLayoutProps) 
           <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
             <FileText className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          <span className="font-bold tracking-tight text-sidebar-foreground">ContractAI</span>
+          <button onClick={() => setLocation(HOMEPAGE_PATH)} className="font-bold tracking-tight text-sidebar-foreground" data-testid="link-home">ContractAI</button>
         </div>
         <div className="flex items-center gap-1">
           <LanguageSwitcher className="text-sidebar-foreground" />

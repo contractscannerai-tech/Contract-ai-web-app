@@ -240,6 +240,8 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res: Response):
       referralCode: user.referralCode,
       termsAccepted: user.termsAccepted ?? false,
       language: user.language ?? "en",
+      reviewPromptShown: user.reviewPromptShown ?? false,
+      teamId: user.teamId ?? null,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -275,6 +277,35 @@ router.patch("/me/language", requireAuth, async (req: AuthenticatedRequest, res:
       userId: req.userId,
     }, "Update language: unhandled exception");
     res.status(500).json(structuredError("AUTH", "Failed to update language", err instanceof Error ? err.message : String(err)));
+  }
+});
+
+router.post("/me/review-shown", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { submitted, rating, comment } = req.body as { submitted?: boolean; rating?: number | null; comment?: string | null };
+  try {
+    await db
+      .update(usersTable)
+      .set({ reviewPromptShown: true, updatedAt: new Date() })
+      .where(eq(usersTable.id, req.userId!));
+
+    if (submitted && typeof rating === "number" && rating >= 1 && rating <= 5) {
+      req.log.info({
+        source: "REVIEW",
+        userId: req.userId,
+        rating,
+        comment: comment ?? null,
+      }, "User submitted in-app review");
+    }
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({
+      error: true,
+      source: "AUTH",
+      message: "Failed to record review prompt",
+      details: err instanceof Error ? err.message : String(err),
+      userId: req.userId,
+    }, "Review-shown error");
+    res.status(500).json(structuredError("AUTH", "Failed to record review prompt", err instanceof Error ? err.message : String(err)));
   }
 });
 

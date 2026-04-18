@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 import type { AuthenticatedRequest } from "../middlewares/auth.js";
 import { requireAuth } from "../middlewares/auth.js";
+import { ensureTeamForOwner } from "./teams.js";
 
 const router = Router();
 
@@ -269,12 +270,30 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
           .where(eq(usersTable.id, userId));
 
         const upgradedUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+        if (plan === "team" && upgradedUser[0]) {
+          try {
+            await ensureTeamForOwner(userId, upgradedUser[0].email);
+            req.log.info({ source: "TEAM", userId }, "Webhook: team auto-created on plan activation");
+          } catch (teamErr) {
+            req.log.error({ source: "TEAM", details: teamErr instanceof Error ? teamErr.message : String(teamErr) }, "Webhook: failed to auto-create team");
+          }
+        }
+
         if (upgradedUser[0]?.referredBy) {
           const bonusForReferrer = plan === "premium" ? 10 : 5;
+          const POINTS_FOR_PRO = 20;
+          const POINTS_FOR_PREMIUM = 50;
+          const POINTS_FOR_TEAM = 50;
+          const pointsAwarded = plan === "premium" ? POINTS_FOR_PREMIUM : plan === "team" ? POINTS_FOR_TEAM : POINTS_FOR_PRO;
+
           const referrer = await db.select().from(usersTable).where(eq(usersTable.id, upgradedUser[0].referredBy)).limit(1);
           if (referrer[0]) {
             await db.update(usersTable)
-              .set({ bonusScans: (referrer[0].bonusScans ?? 0) + bonusForReferrer })
+              .set({
+                bonusScans: (referrer[0].bonusScans ?? 0) + bonusForReferrer,
+                referralPoints: (referrer[0].referralPoints ?? 0) + pointsAwarded,
+              })
               .where(eq(usersTable.id, referrer[0].id));
 
             const newStatus = plan === "premium" ? "subscribed_premium" : "subscribed_pro";
@@ -286,7 +305,7 @@ router.post("/webhook", async (req: Request, res: Response): Promise<void> => {
               scansAwarded: bonusForReferrer,
             }).onConflictDoNothing();
 
-            req.log.info({ source: "REFERRAL", referrerId: referrer[0].id, referredId: userId, bonus: bonusForReferrer, plan }, "Webhook: referral bonus awarded for subscription upgrade");
+            req.log.info({ source: "REFERRAL", referrerId: referrer[0].id, referredId: userId, bonus: bonusForReferrer, points: pointsAwarded, plan }, "Webhook: referral bonus + points awarded for subscription upgrade");
           }
         }
 

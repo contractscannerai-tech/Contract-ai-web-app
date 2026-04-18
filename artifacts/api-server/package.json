@@ -12,6 +12,7 @@
   "dependencies": {
     "@pinecone-database/pinecone": "^7.2.0",
     "@sendgrid/mail": "^8.1.6",
+    "@simplewebauthn/server": "^13.3.0",
     "@supabase/supabase-js": "^2.103.0",
     "@swc/helpers": "^0.5.21",
     "@workspace/api-zod": "workspace:*",

@@ -8,6 +8,7 @@ import { login, signup } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
+import { BiometricLoginButton } from "@/components/biometric-login-button";
 
 function GoogleIcon() {
   return (
@@ -214,6 +215,11 @@ export default function AuthPage() {
                   {t("auth.submit")}
                 </Button>
               </form>
+
+              <BiometricLoginButton
+                email={email}
+                onSuccess={() => setTimeout(() => setLocation("/dashboard", { replace: true }), 500)}
+              />
             </div>
 
             <div className="mt-6 border border-border rounded-xl p-5 text-center bg-card/50">

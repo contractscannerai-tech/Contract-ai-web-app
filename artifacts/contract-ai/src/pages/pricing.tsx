@@ -1,47 +1,53 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Loader2, FileText, Zap, Crown, Lock } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, FileText, Zap, Crown, Lock, Users } from "lucide-react";
 import { useGetMe, useCreateCheckout, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-type PlanKey = "free" | "pro" | "premium";
+type PlanKey = "free" | "pro" | "premium" | "team";
 
 const PLAN_ICONS: Record<PlanKey, React.ReactNode> = {
   free:    <FileText className="w-5 h-5" />,
   pro:     <Zap className="w-5 h-5" />,
   premium: <Crown className="w-5 h-5" />,
+  team:    <Users className="w-5 h-5" />,
 };
 
 const PLAN_NAMES: Record<PlanKey, string> = {
   free:    "Starter",
   pro:     "Pro",
   premium: "Legal Partner",
+  team:    "Team",
 };
 
 const PLAN_DESCS: Record<PlanKey, string> = {
   free:    "Essential contract scanning, free forever.",
   pro:     "More scans, full explanations, photo uploads.",
   premium: "Unlimited everything + exclusive AI tools.",
+  team:    "Shared scan pool for small teams (up to 5 members).",
 };
 
 const PLAN_PRICES: Record<PlanKey, string> = {
   free:    "$0",
   pro:     "$29",
   premium: "$99",
+  team:    "$399",
 };
 
 const PLAN_PERIOD: Record<PlanKey, string> = {
   free:    "forever",
   pro:     "/month",
   premium: "/month",
+  team:    "/month",
 };
 
 const PLAN_CTA: Record<PlanKey, string> = {
   free:    "Get started free",
   pro:     "Upgrade to Pro",
   premium: "Upgrade to Legal Partner",
+  team:    "Upgrade to Team",
 };
 
 interface FeatureRow {
@@ -49,28 +55,33 @@ interface FeatureRow {
   free: boolean | string;
   pro: boolean | string;
   premium: boolean | string;
+  team: boolean | string;
   premiumOnly?: boolean;
 }
 
 const FEATURE_ROWS: FeatureRow[] = [
-  { label: "Contract scans per month",       free: "3",          pro: "20",          premium: "Unlimited" },
-  { label: "PDF contract analysis",          free: true,         pro: true,          premium: true },
-  { label: "AI risk detection",              free: "Names only", pro: "Full detail", premium: "Full detail" },
-  { label: "Key clause extraction",          free: "Names only", pro: "Full detail", premium: "Full detail" },
-  { label: "Plain-English summaries",        free: true,         pro: true,          premium: true },
-  { label: "Photo / image OCR scanning",     free: false,        pro: true,          premium: true },
-  { label: "Contract history & archive",     free: false,        pro: true,          premium: true },
-  { label: "AI chat — ask any question",     free: false,        pro: false,         premium: true },
-  { label: "Renegotiation recommendations",  free: false,        pro: false,         premium: true },
-  { label: "Priority processing & support",  free: false,        pro: false,         premium: true },
+  { label: "Contract scans per month",       free: "3",          pro: "20",          premium: "Unlimited",  team: "50 shared" },
+  { label: "PDF contract analysis",          free: true,         pro: true,          premium: true,         team: true },
+  { label: "AI risk detection",              free: "Names only", pro: "Full detail", premium: "Full detail", team: "Full detail" },
+  { label: "Key clause extraction",          free: "Names only", pro: "Full detail", premium: "Full detail", team: "Full detail" },
+  { label: "Plain-English summaries",        free: true,         pro: true,          premium: true,         team: true },
+  { label: "Photo / image OCR scanning",     free: false,        pro: true,          premium: true,         team: true },
+  { label: "Contract history & archive",     free: false,        pro: true,          premium: true,         team: true },
+  { label: "AI chat — ask any question",     free: false,        pro: false,         premium: true,         team: true },
+  { label: "Renegotiation recommendations",  free: false,        pro: false,         premium: true,         team: false },
+  { label: "PDF export of analysis",         free: false,        pro: true,          premium: true,         team: false },
+  { label: "Side-by-side contract comparison", free: false,      pro: false,         premium: true,         team: false },
+  { label: "Up to 5 team members",           free: false,        pro: false,         premium: false,        team: true },
+  { label: "Shared scan pool (50/mo)",       free: false,        pro: false,         premium: false,        team: true },
+  { label: "Priority processing & support",  free: false,        pro: false,         premium: true,         team: true },
 ];
 
 const AI_TOOL_ROWS: FeatureRow[] = [
-  { label: "Document Drafting — AI assists in drafting legal documents",       free: false, pro: false, premium: true, premiumOnly: true },
-  { label: "Application Drafting — AI assists in writing cover letters",       free: false, pro: false, premium: true, premiumOnly: true },
-  { label: "Resume Builder — AI assists in building ATS-optimized resumes",    free: false, pro: false, premium: true, premiumOnly: true },
-  { label: "Career Guidance — AI assists with career paths and insights",      free: false, pro: false, premium: true, premiumOnly: true },
-  { label: "Document Templates Library",                                       free: "Preview", pro: "Preview", premium: "Full access", premiumOnly: false },
+  { label: "Document Drafting — AI assists in drafting legal documents",       free: false, pro: false, premium: true, team: false, premiumOnly: true },
+  { label: "Application Drafting — AI assists in writing cover letters",       free: false, pro: false, premium: true, team: false, premiumOnly: true },
+  { label: "Resume Builder — AI assists in building ATS-optimized resumes",    free: false, pro: false, premium: true, team: false, premiumOnly: true },
+  { label: "Career Guidance — AI assists with career paths and insights",      free: false, pro: false, premium: true, team: false, premiumOnly: true },
+  { label: "Document Templates Library",                                       free: "Preview", pro: "Preview", premium: "Full access", team: "Preview", premiumOnly: false },
 ];
 
 const FAQS = [
@@ -155,7 +166,7 @@ export default function PricingPage() {
     }
   }
 
-  const planKeys: PlanKey[] = ["free", "pro", "premium"];
+  const planKeys: PlanKey[] = ["free", "pro", "premium", "team"];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -191,7 +202,7 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
           {planKeys.map((planKey) => {
             const isCurrentPlan = user?.plan === planKey;
             const isLoading = loadingPlan === planKey;
@@ -294,18 +305,19 @@ export default function PricingPage() {
         <div className="mb-14">
           <h2 className="text-xl font-bold text-center mb-6">What's included in every plan</h2>
           <div className="bg-card border border-card-border rounded-2xl overflow-hidden shadow-sm">
-            <div className="grid grid-cols-4 bg-muted/50 border-b border-border px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              <div className="col-span-1">Feature</div>
+            <div className="grid grid-cols-6 bg-muted/50 border-b border-border px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="col-span-2">Feature</div>
               <div className="text-center">Starter</div>
               <div className="text-center">Pro</div>
               <div className="text-center">Legal Partner</div>
+              <div className="text-center">Team</div>
             </div>
 
             <div className="divide-y divide-border">
               {FEATURE_ROWS.map((row, i) => (
-                <div key={i} className="grid grid-cols-4 px-6 py-3.5 text-sm items-center hover:bg-muted/20 transition-colors">
-                  <div className="col-span-1 text-foreground/80">{row.label}</div>
-                  {(["free", "pro", "premium"] as PlanKey[]).map((p) => (
+                <div key={i} className="grid grid-cols-6 px-6 py-3.5 text-sm items-center hover:bg-muted/20 transition-colors">
+                  <div className="col-span-2 text-foreground/80">{row.label}</div>
+                  {(["free", "pro", "premium", "team"] as PlanKey[]).map((p) => (
                     <div key={p} className="flex justify-center">
                       <FeatureValue value={row[p]} highlight={false} />
                     </div>
@@ -313,22 +325,22 @@ export default function PricingPage() {
                 </div>
               ))}
 
-              <div className="grid grid-cols-4 px-6 py-3.5 bg-amber-500/5 items-center">
-                <div className="col-span-1 text-xs font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="grid grid-cols-6 px-6 py-3.5 bg-amber-500/5 items-center">
+                <div className="col-span-2 text-xs font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Crown className="w-3.5 h-3.5" /> AI Tools
                 </div>
-                <div className="col-span-3 text-xs text-muted-foreground text-center">Premium-exclusive features</div>
+                <div className="col-span-4 text-xs text-muted-foreground text-center">Legal Partner exclusive</div>
               </div>
 
               {AI_TOOL_ROWS.map((row, i) => (
-                <div key={i} className="grid grid-cols-4 px-6 py-3.5 text-sm items-center hover:bg-muted/20 transition-colors">
-                  <div className="col-span-1 text-foreground/80">
+                <div key={i} className="grid grid-cols-6 px-6 py-3.5 text-sm items-center hover:bg-muted/20 transition-colors">
+                  <div className="col-span-2 text-foreground/80">
                     <span>{row.label.split(" — ")[0]}</span>
                     {row.label.includes(" — ") && (
                       <span className="block text-xs text-muted-foreground mt-0.5">{row.label.split(" — ")[1]}</span>
                     )}
                   </div>
-                  {(["free", "pro", "premium"] as PlanKey[]).map((p) => (
+                  {(["free", "pro", "premium", "team"] as PlanKey[]).map((p) => (
                     <div key={p} className="flex justify-center">
                       <FeatureValue value={row[p]} highlight={false} />
                     </div>

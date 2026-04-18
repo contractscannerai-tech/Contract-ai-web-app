@@ -10,6 +10,9 @@ import referralsRouter from "./referrals.js";
 import supportRouter from "./support.js";
 import aiRouter from "./ai.js";
 import extrasRouter from "./extras.js";
+import auditRouter from "./audit.js";
+import biometricRouter from "./biometric.js";
+import teamsRouter from "./teams.js";
 
 const router: IRouter = Router();
 
@@ -23,6 +26,9 @@ router.use("/dashboard", dashboardRouter);
 router.use("/referrals", referralsRouter);
 router.use("/support", supportRouter);
 router.use("/ai", aiRouter);
+router.use("/audit", auditRouter);
+router.use("/biometric", biometricRouter);
+router.use("/teams", teamsRouter);
 router.use(extrasRouter);
 
 export default router;

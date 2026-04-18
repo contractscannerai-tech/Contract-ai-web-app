@@ -1,0 +1,108 @@
+# ContractAI — CORE IMPLEMENTATION (PART 2 / 2)
+
+IMPORTANT:
+- Do NOT remove or modify features
+- DO NOT simplify logic
+- Everything must work end-to-end
+- Backend + frontend fully connected
+
+---
+
+FEATURE 9 — SMART REVIEW PROMPT
+- After 3 analyses + 3 days old account + random 30%
+- Trigger Play Store review prompt
+- Must show only once per user
+- Fallback modal if native fails
+
+---
+
+FEATURE 10 — REFERRAL LEADERBOARD
+- Points system:
+  signup = +5
+  Pro upgrade = +20
+  Premium upgrade = +50
+
+- Leaderboard API:
+GET /api/referrals/leaderboard
+- Monthly reset
+- Show rank + badges
+
+---
+
+FEATURE 11 — AUDIT LOG / HISTORY
+- Full contract history page
+- Filters: date, risk score, type
+- Free: 5 records
+- Pro: 50 records
+- Premium: unlimited
+
+---
+
+FEATURE 12 — BIOMETRIC LOGIN
+- Fingerprint / Face unlock
+- Register public key with backend
+- Secure login via signature
+- Disable after password change
+
+---
+
+FEATURE 13 — IN-APP CHAT SUPPORT
+- Floating chat button
+- AI support assistant
+- Escalate billing issues to email
+- Save chat history
+- Available for all users
+
+---
+
+FEATURE 14 — TEAM PLAN (GROUP PLAN)
+
+PLAN PRICE MUST BE: $399 (NOT $2.99 OR ANY OTHER VALUE)
+
+- New plan: TEAM PLAN = $399/month
+- Max 5 users
+- Shared dashboard
+
+Database:
+- teams table
+- team_members table
+
+Features:
+- Invite system (email)
+- Join via link
+- Shared scan pool: 50 scans/month
+- Role: owner/member
+
+Permissions:
+- Includes:
+  - Contract analysis
+  - Interactive mode
+  - Ask your contract (5/day)
+- Excludes:
+  - PDF export
+  - negotiation suggestions
+  - comparison tool
+
+Frontend:
+- Team dashboard
+- Invite members UI
+- Usage tracking per team
+- Shared scan counter
+
+---
+
+FEATURE 15 — FINAL SYSTEM CHECK
+- Validate ALL endpoints
+- Ensure no broken UI buttons
+- Ensure all plan restrictions enforced backend
+- Ensure rate limiting active
+- Ensure all features connected to real AI responses
+- Ensure mobile responsiveness
+
+---
+
+FINAL REQUIREMENT:
+- EVERYTHING must be production ready
+- NO dummy buttons
+- NO unused UI
+- NO broken feature links

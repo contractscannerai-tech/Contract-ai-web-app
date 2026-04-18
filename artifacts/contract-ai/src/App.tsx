@@ -25,6 +25,10 @@ import ApplicationPage from "@/pages/ai/application";
 import ResumePage from "@/pages/ai/resume";
 import CareerPage from "@/pages/ai/career";
 import TemplatesPage from "@/pages/ai/templates";
+import LeaderboardPage from "@/pages/leaderboard";
+import HistoryPage from "@/pages/history";
+import TeamPage from "@/pages/team";
+import TeamJoinPage from "@/pages/team-join";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +59,10 @@ function Router() {
       <Route path="/ai/resume">{() => <Gated><ResumePage /></Gated>}</Route>
       <Route path="/ai/career">{() => <Gated><CareerPage /></Gated>}</Route>
       <Route path="/ai/templates">{() => <Gated><TemplatesPage /></Gated>}</Route>
+      <Route path="/leaderboard">{() => <Gated><LeaderboardPage /></Gated>}</Route>
+      <Route path="/history">{() => <Gated><HistoryPage /></Gated>}</Route>
+      <Route path="/team">{() => <Gated><TeamPage /></Gated>}</Route>
+      <Route path="/team/join" component={TeamJoinPage} />
       <Route component={NotFound} />
     </Switch>
   );
