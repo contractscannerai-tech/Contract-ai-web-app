@@ -60,7 +60,7 @@ interface FeatureRow {
 }
 
 const FEATURE_ROWS: FeatureRow[] = [
-  { label: "Contract scans per month",       free: "3",          pro: "20",          premium: "Unlimited",  team: "50 shared" },
+  { label: "Contract scans per month",       free: "3",          pro: "20",          premium: "Unlimited",  team: "Unlimited" },
   { label: "PDF contract analysis",          free: true,         pro: true,          premium: true,         team: true },
   { label: "AI risk detection",              free: "Names only", pro: "Full detail", premium: "Full detail", team: "Full detail" },
   { label: "Key clause extraction",          free: "Names only", pro: "Full detail", premium: "Full detail", team: "Full detail" },
@@ -68,20 +68,19 @@ const FEATURE_ROWS: FeatureRow[] = [
   { label: "Photo / image OCR scanning",     free: false,        pro: true,          premium: true,         team: true },
   { label: "Contract history & archive",     free: false,        pro: true,          premium: true,         team: true },
   { label: "AI chat — ask any question",     free: false,        pro: false,         premium: true,         team: true },
-  { label: "Renegotiation recommendations",  free: false,        pro: false,         premium: true,         team: false },
-  { label: "PDF export of analysis",         free: false,        pro: true,          premium: true,         team: false },
-  { label: "Side-by-side contract comparison", free: false,      pro: false,         premium: true,         team: false },
+  { label: "Renegotiation recommendations",  free: false,        pro: false,         premium: true,         team: true },
+  { label: "PDF export of analysis",         free: false,        pro: true,          premium: true,         team: true },
+  { label: "Side-by-side contract comparison", free: false,      pro: false,         premium: true,         team: true },
   { label: "Up to 5 team members",           free: false,        pro: false,         premium: false,        team: true },
-  { label: "Shared scan pool (50/mo)",       free: false,        pro: false,         premium: false,        team: true },
   { label: "Priority processing & support",  free: false,        pro: false,         premium: true,         team: true },
 ];
 
 const AI_TOOL_ROWS: FeatureRow[] = [
-  { label: "Document Drafting — AI assists in drafting legal documents",       free: false, pro: false, premium: true, team: false, premiumOnly: true },
-  { label: "Application Drafting — AI assists in writing cover letters",       free: false, pro: false, premium: true, team: false, premiumOnly: true },
-  { label: "Resume Builder — AI assists in building ATS-optimized resumes",    free: false, pro: false, premium: true, team: false, premiumOnly: true },
-  { label: "Career Guidance — AI assists with career paths and insights",      free: false, pro: false, premium: true, team: false, premiumOnly: true },
-  { label: "Document Templates Library",                                       free: "Preview", pro: "Preview", premium: "Full access", team: "Preview", premiumOnly: false },
+  { label: "Document Drafting — AI assists in drafting legal documents",       free: false, pro: false, premium: true, team: true, premiumOnly: true },
+  { label: "Application Drafting — AI assists in writing cover letters",       free: false, pro: false, premium: true, team: true, premiumOnly: true },
+  { label: "Resume Builder — AI assists in building ATS-optimized resumes",    free: false, pro: false, premium: true, team: true, premiumOnly: true },
+  { label: "Career Guidance — AI assists with career paths and insights",      free: false, pro: false, premium: true, team: true, premiumOnly: true },
+  { label: "Document Templates Library",                                       free: "Preview", pro: "Preview", premium: "Full access", team: "Full access", premiumOnly: false },
 ];
 
 const FAQS = [

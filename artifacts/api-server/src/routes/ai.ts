@@ -112,7 +112,7 @@ export const TEMPLATES = [
 
 router.get("/templates", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const isPremium = req.userPlan === "premium";
+    const isPremium = req.userPlan === "premium" || req.userPlan === "team";
     res.json({ templates: TEMPLATES, isPremium });
   } catch (err) {
     aiError(res, err);

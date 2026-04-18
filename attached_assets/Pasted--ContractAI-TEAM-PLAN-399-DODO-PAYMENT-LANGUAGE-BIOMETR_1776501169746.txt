@@ -1,0 +1,264 @@
+# ContractAI — TEAM PLAN ($399) + DODO PAYMENT + LANGUAGE + BIOMETRICS (FINAL)
+
+IMPORTANT:
+- DO NOT use Stripe anywhere
+- Payment provider is DODO
+- Use ONLY DODO product/plan IDs from environment variables
+- Do NOT assume Stripe logic or Stripe APIs
+- Everything must be fully functional (frontend + backend)
+
+---
+
+## 🔴 TEAM PLAN ($399) — FULL ACCESS
+
+REQUIREMENTS:
+
+1. Team Plan price = $399/month
+2. Team Plan includes ALL features (same as Premium)
+3. Difference:
+   - Allows up to 5 users under one plan
+
+---
+
+## 💳 DODO PAYMENT INTEGRATION (CRITICAL)
+
+Use environment variables:
+
+- DODO_TEAM_PLAN_PRODUCT_ID
+- DODO_TEAM_PLAN_PRICE_ID
+- DODO_API_KEY (if required)
+
+---
+
+### PURCHASE FLOW:
+
+When user clicks "Upgrade to Team Plan":
+
+- Call backend endpoint:
+  POST /api/dodo/create-subscription
+
+- Backend must:
+  - Use DODO_TEAM_PLAN_PRICE_ID
+  - Create subscription via Dodo API
+  - Return checkout/payment link
+
+---
+
+### PAYMENT CONFIRMATION (WEBHOOK)
+
+Create endpoint:
+
+POST /api/dodo/webhook
+
+Dodo will notify backend when:
+
+- payment successful
+- subscription active
+- subscription canceled
+- payment failed
+
+---
+
+### WHEN PAYMENT IS SUCCESSFUL:
+
+Backend MUST:
+
+- Create team
+- Assign user as OWNER
+- Set:
+  - plan = "team"
+  - maxMembers = 5
+  - full feature access
+
+---
+
+### WHEN SUBSCRIPTION FAILS OR IS CANCELED:
+
+Backend MUST:
+
+- Downgrade ALL team members to Free plan
+- Remove team access
+- Deactivate or delete team
+
+---
+
+## 🧠 TEAM SYSTEM (BACKEND CONTROLLED)
+
+Database structure:
+
+TEAM:
+- id
+- ownerUserId
+- maxMembers = 5
+- plan = "team"
+- subscriptionId
+- createdAt
+
+TEAM MEMBERS:
+- id
+- teamId
+- userId
+- role ("owner", "member")
+- joinedAt
+
+---
+
+### INVITE SYSTEM:
+
+- Owner can invite up to 4 additional users
+- Total team size = 5 users MAX
+
+---
+
+### LIMIT ENFORCEMENT:
+
+If team already has 5 users:
+
+Return error:
+"Team limit reached (maximum 5 users allowed)"
+
+---
+
+### MEMBER JOIN:
+
+- User joins via invite link
+- Automatically becomes team member
+- Inherits ALL features
+
+---
+
+### FEATURE ACCESS RULE:
+
+If user.plan === "team":
+
+UNLOCK ALL:
+- AI analysis
+- negotiation suggestions
+- PDF export
+- comparison tool
+- Q&A
+- reminders
+- everything
+
+---
+
+## 💰 PRICING PAGE
+
+- Team Plan MUST appear on ALL pricing pages
+- Label:
+  "Team Plan — $399/month (Up to 5 users)"
+- Show:
+  "All Premium features included"
+
+---
+
+## 🌍 LANGUAGE SYSTEM (FULLY FIXED)
+
+Environment variable:
+LANGUAGES_SUPPORTED
+
+---
+
+### REQUIREMENTS:
+
+1. ALL UI text must use translations (no hardcoded English)
+2. Language stored in:
+   - localStorage
+   - database profile
+
+---
+
+### AI LANGUAGE CONTROL:
+
+Every AI request MUST include:
+
+"Respond ONLY in [selected language]. Do NOT mix languages."
+
+---
+
+### CRITICAL:
+
+- User MUST analyze contracts in selected language
+- AI MUST respond in same language
+- Q&A MUST match language
+- NO errors when switching languages
+
+---
+
+### RTL SUPPORT:
+
+If language = Arabic:
+- Enable RTL layout
+
+---
+
+## 🔐 BIOMETRIC AUTHENTICATION (DEVICE-BASED)
+
+IMPORTANT:
+
+- DO NOT store fingerprint or face data
+- DO NOT simulate biometrics
+
+---
+
+### IMPLEMENTATION:
+
+1. Detect if device supports biometrics
+2. If supported:
+   - Show biometric login option
+
+3. When user uses it:
+   - Trigger device biometric prompt
+   - Device verifies locally
+   - Return success/failure
+
+4. If success:
+   - Log user in
+
+5. If device has no biometrics:
+   - DO NOT show option
+
+---
+
+## ❗ ERROR HANDLING (STRICT)
+
+ALL errors MUST:
+
+- Be clear
+- Be specific
+- Explain what went wrong
+
+---
+
+### EXAMPLES:
+
+- "File type not supported. Upload PDF or image."
+- "Scan limit reached for this month."
+- "Team limit reached (maximum 5 users)."
+- "Network error. Check your connection."
+
+---
+
+## 🔁 FINAL REQUIREMENTS
+
+- NO fake buttons
+- NO broken API calls
+- ALL features must work fully
+- ALL plan restrictions must be enforced in backend
+- ALL features must work on mobile
+
+---
+
+## 🚨 FAILURE CONDITIONS (MUST NOT HAPPEN)
+
+- Team allows more than 5 users
+- Language breaks AI responses
+- AI responds in wrong language
+- Biometric appears on unsupported device
+- Features unlocked but not working
+- Generic or unclear error messages
+
+---
+
+FINAL INSTRUCTION:
+Implement everything exactly as written using DODO (not Stripe), with production-ready code.

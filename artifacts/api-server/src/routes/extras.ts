@@ -59,7 +59,7 @@ router.post("/analysis/:id/ask", requireAuth, async (req: AuthenticatedRequest, 
     }
 
     const limit = ASK_LIMITS[user.plan] ?? 3;
-    const isUnlimited = user.plan === "premium";
+    const isUnlimited = user.plan === "premium" || user.plan === "team";
     if (!isUnlimited && askUsed >= limit) {
       res.status(403).json(structuredError(
         "PLAN",

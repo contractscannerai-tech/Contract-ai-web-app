@@ -30,7 +30,7 @@ export default function CareerPage() {
   const [error, setError] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
-  const isPremium = user?.plan === "premium";
+  const isPremium = user?.plan === "premium" || user?.plan === "team";
 
   async function handleLogout() {
     await logout.mutateAsync({});

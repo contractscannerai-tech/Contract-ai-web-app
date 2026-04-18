@@ -51,10 +51,12 @@ export default function DashboardPage() {
   const planLabel =
     !user ? "..." :
     user.plan === "premium" ? "Legal Partner" :
+    user.plan === "team" ? "Team" :
     user.plan === "pro" ? "Pro" : "Starter";
 
   const planColor =
     user?.plan === "premium" ? "text-amber-600 bg-amber-500/10 border-amber-500/20" :
+    user?.plan === "team"    ? "text-violet-600 bg-violet-500/10 border-violet-500/20" :
     user?.plan === "pro"     ? "text-primary bg-primary/10 border-primary/20" :
                                "text-muted-foreground bg-muted border-border";
 

@@ -223,7 +223,7 @@ async function analyzeWithGroq(text: string, plan: string, language?: string): P
   };
 
   // Negotiation suggestions: Pro + Premium only (excluded for free and team plans)
-  if (plan === "pro" || plan === "premium") {
+  if (plan === "pro" || plan === "premium" || plan === "team") {
     const reneg = coerceRenegotiation(parsed["renegotiation"]);
     if (reneg.length > 0) result.renegotiation = reneg;
   }
@@ -272,34 +272,12 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
 
     let team: typeof teamsTable.$inferSelect | undefined;
     if (user.plan === "team") {
-      if (!user.teamId) {
-        res.status(403).json(structuredError("TEAM", "You are on the Team plan but have not been added to a team yet", `userId=${req.userId}`));
-        return;
+      if (user.teamId) {
+        const teamRows = await db.select().from(teamsTable).where(eq(teamsTable.id, user.teamId)).limit(1);
+        team = teamRows[0];
       }
-      const teamRows = await db.select().from(teamsTable).where(eq(teamsTable.id, user.teamId)).limit(1);
-      team = teamRows[0];
-      if (!team) {
-        res.status(404).json(structuredError("TEAM", "Your team could not be found", `teamId=${user.teamId}`));
-        return;
-      }
-      // Monthly reset for team scans
-      const now = new Date();
-      const monthsApart = (now.getUTCFullYear() - team.scansResetAt.getUTCFullYear()) * 12 + (now.getUTCMonth() - team.scansResetAt.getUTCMonth());
-      if (monthsApart >= 1) {
-        await db.update(teamsTable)
-          .set({ scansUsed: 0, scansResetAt: now })
-          .where(eq(teamsTable.id, team.id));
-        team = { ...team, scansUsed: 0, scansResetAt: now };
-      }
-      if (team.scansUsed >= team.scansLimit) {
-        res.status(403).json(structuredError(
-          "PLAN",
-          `Your team's monthly shared scan pool (${team.scansLimit}) is exhausted. It resets on the 1st of next month.`,
-          `team=${team.id} used=${team.scansUsed} limit=${team.scansLimit}`
-        ));
-        return;
-      }
-    } else {
+      // Team plan = unlimited scans per user (same as Premium). No shared-pool enforcement.
+    } else if (user.plan !== "premium") {
       const baseLimit = PLAN_LIMITS[user.plan] ?? 3;
       const limit = baseLimit + (user.bonusScans ?? 0);
       if (user.contractsUsed >= limit) {
@@ -394,7 +372,7 @@ router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: Authentica
       await db.update(teamsTable)
         .set({ scansUsed: team.scansUsed + 1 })
         .where(eq(teamsTable.id, team.id));
-    } else {
+    } else if (user.plan !== "premium") {
       const newContractsUsed = user.contractsUsed + 1;
       const updateData: Record<string, unknown> = { contractsUsed: newContractsUsed };
 

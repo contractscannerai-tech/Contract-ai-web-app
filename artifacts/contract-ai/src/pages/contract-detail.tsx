@@ -73,7 +73,7 @@ export default function ContractDetailPage() {
 
   const { data: user } = useGetMe();
   const logout = useLogout();
-  const isPremium = user?.plan === "premium";
+  const isPremium = user?.plan === "premium" || user?.plan === "team";
 
   const { data: chatHistory } = useGetChatHistory(id, {
     query: {

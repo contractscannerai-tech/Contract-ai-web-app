@@ -38,7 +38,7 @@ export default function TemplatesPage() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
-  const userIsPremium = user?.plan === "premium";
+  const userIsPremium = user?.plan === "premium" || user?.plan === "team";
 
   async function handleLogout() {
     await logout.mutateAsync({});
