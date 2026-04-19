@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Loader2, FileText, Zap, Crown, Lock, Users } from
 import { useGetMe, useCreateCheckout, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useNetworkGuard } from "@/components/network-guard";
 
 type PlanKey = "free" | "pro" | "premium" | "team";
 
@@ -128,6 +129,7 @@ export default function PricingPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const networkGuard = useNetworkGuard();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const { data: user } = useGetMe();
@@ -149,6 +151,7 @@ export default function PricingPage() {
       setLocation("/auth");
       return;
     }
+    if (!networkGuard.requireOnline("Secure payment")) return;
     setLoadingPlan(planKey);
     try {
       const result = await createCheckout.mutateAsync({ data: { plan: planKey } });

@@ -12,6 +12,7 @@ import { formatFileSize } from "@/lib/utils";
 import AppLayout from "@/components/layout";
 import type { Contract } from "@workspace/api-client-react";
 import { useI18n } from "@/lib/i18n";
+import { useNetworkGuard } from "@/components/network-guard";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024;
@@ -115,6 +116,7 @@ export default function UploadPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useI18n();
+  const networkGuard = useNetworkGuard();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayFile, setDisplayFile] = useState<File | null>(null);
@@ -232,6 +234,8 @@ export default function UploadPage() {
 
   async function handleAnalyze() {
     if (!uploadedContractId || stage !== "ready") return;
+
+    if (!networkGuard.requireOnline("Contract analysis")) return;
 
     setAnalysisFailed(false);
     setStage("analyzing");

@@ -92,7 +92,7 @@ router.post("/signup", async (req, res: Response): Promise<void> => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
     req.log.info({ source: "AUTH", userId: data.user?.id, email }, "Signup: success");
@@ -147,7 +147,7 @@ router.post("/login", async (req, res: Response): Promise<void> => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
     req.log.info({ source: "AUTH", userId: data.user.id, plan: dbUser[0]?.plan }, "Login: success");
@@ -203,7 +203,7 @@ router.post("/oauth-session", async (req, res: Response): Promise<void> => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
     req.log.info({ source: "AUTH", userId: user.id, email: user.email, provider: "google" }, "OAuth session: established successfully");

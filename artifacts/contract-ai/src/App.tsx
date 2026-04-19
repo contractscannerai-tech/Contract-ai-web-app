@@ -9,6 +9,7 @@ import { SplashScreen } from "@/components/splash-screen";
 import { TermsGate } from "@/components/terms-gate";
 import { IntegrityGuard } from "@/components/integrity-guard";
 import { NetworkBanner } from "@/components/network-banner";
+import { NetworkGuardProvider } from "@/components/network-guard";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -88,7 +89,7 @@ function AppGate() {
   }, []);
 
   return (
-    <>
+    <NetworkGuardProvider>
       <NetworkBanner />
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
       {splashDone && (
@@ -98,7 +99,7 @@ function AppGate() {
       )}
       <Toaster />
       <IntegrityGuard />
-    </>
+    </NetworkGuardProvider>
   );
 }
 

@@ -289,7 +289,7 @@ router.post("/login/verify", async (req: Request, res: Response): Promise<void> 
       httpOnly: true,
       secure: process.env["NODE_ENV"] === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
     req.log.info({ source: "BIOMETRIC", userId: user.id }, "Biometric: login successful");
