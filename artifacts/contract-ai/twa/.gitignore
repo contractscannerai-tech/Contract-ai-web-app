@@ -1,0 +1,10 @@
+# Build outputs
+app/build/
+build/
+.gradle/
+
+# Bubblewrap logs
+*.log
+
+# Local generated dist (committed signed artifacts only)
+android.keystore
