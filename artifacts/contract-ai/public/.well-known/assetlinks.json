@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.contractaiscan.app",
+      "sha256_cert_fingerprints": [
+        "94:7F:C1:EF:03:17:15:F4:BC:85:33:F5:CC:BE:E5:50:29:59:A1:10:6D:B5:4B:1E:70:91:67:C2:48:FD:65:F5"
+      ]
+    }
+  }
+]
