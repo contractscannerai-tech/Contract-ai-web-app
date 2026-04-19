@@ -43,6 +43,14 @@ function Gated({ children }: { children: React.ReactNode }) {
   return <TermsGate>{children}</TermsGate>;
 }
 
+// Wouter expects an absolute-looking base ("" or "/foo"). Vite's BASE_URL can
+// be "/", "./", or a path like "/myapp/" depending on the build mode. Normalize
+// all of those to a value wouter accepts without mangling routes.
+function normalizeWouterBase(baseUrl: string): string {
+  if (!baseUrl || baseUrl === "/" || baseUrl === "./" || baseUrl === ".") return "";
+  return baseUrl.replace(/\/$/, "");
+}
+
 function Router() {
   return (
     <Switch>
@@ -89,7 +97,7 @@ function AppGate() {
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
       {splashDone && (
         <BiometricLockGate>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <WouterRouter base={normalizeWouterBase(import.meta.env.BASE_URL)}>
             <Router />
           </WouterRouter>
         </BiometricLockGate>

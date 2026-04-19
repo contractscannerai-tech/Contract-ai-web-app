@@ -4,8 +4,12 @@ const config: CapacitorConfig = {
   appId: "com.contractai.app",
   appName: "ContractAI",
   webDir: "dist",
+  server: {
+    androidScheme: "https",
+  },
   android: {
     allowMixedContent: false,
+    webContentsDebuggingEnabled: true,
   },
   plugins: {
     SplashScreen: {

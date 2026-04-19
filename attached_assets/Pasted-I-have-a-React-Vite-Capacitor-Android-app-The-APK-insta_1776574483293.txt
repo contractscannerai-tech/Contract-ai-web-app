@@ -1,0 +1,119 @@
+I have a React (Vite) + Capacitor Android app. The APK installs correctly, but when I open it, it shows a blank white/black screen.
+
+This is a WebView asset loading issue. The problem is that Capacitor cannot find the built web files (index.html, JS, CSS). I need you to FIX this completely.
+
+DO NOT change my app logic or UI. ONLY fix build + Capacitor integration.
+
+-----------------------------------
+STEP 1 — FIX VITE BUILD OUTPUT
+-----------------------------------
+1. Open vite.config.js (or vite.config.ts)
+2. Ensure the build output directory is EXACTLY:
+
+build: {
+  outDir: 'dist',
+  emptyOutDir: true
+}
+
+3. Ensure base is correct (important for mobile):
+
+base: './'
+
+-----------------------------------
+STEP 2 — FIX CAPACITOR CONFIG
+-----------------------------------
+1. Open capacitor.config.ts (or .json)
+2. Set:
+
+webDir: 'dist'
+
+3. Add this if missing:
+
+server: {
+  androidScheme: 'https'
+}
+
+4. Fix splash screen flicker:
+
+plugins: {
+  SplashScreen: {
+    launchShowDuration: 0,
+    autoHide: true
+  }
+}
+
+-----------------------------------
+STEP 3 — BUILD + SYNC PIPELINE (CRITICAL)
+-----------------------------------
+Run EXACTLY these commands in order:
+
+npm install
+npm run build
+npx cap sync android
+
+-----------------------------------
+STEP 4 — VERIFY FILES EXIST (MANDATORY CHECK)
+-----------------------------------
+After sync, go to:
+
+android/app/src/main/assets/
+
+Make sure this folder contains:
+- index.html
+- assets/ folder with JS and CSS files
+
+If these files are NOT there, STOP and fix the build copy process.
+
+-----------------------------------
+STEP 5 — FORCE CLEAN AND REBUILD
+-----------------------------------
+Run:
+
+npx cap clean android
+npx cap sync android
+npx cap open android
+
+Then in Android Studio:
+- Build → Clean Project
+- Build → Rebuild Project
+
+-----------------------------------
+STEP 6 — FIX BLANK SCREEN ROOT CAUSES
+-----------------------------------
+Check and fix ALL of these:
+
+1. Ensure index.html paths are relative (no leading /)
+2. Ensure no API calls are blocking app load
+3. Add fallback UI if app fails to load
+
+-----------------------------------
+STEP 7 — ENABLE WEBVIEW DEBUGGING
+-----------------------------------
+Add debugging support so I can inspect errors:
+
+- Ensure WebView debugging is enabled in Android build
+- Confirm I can use chrome://inspect to debug
+
+-----------------------------------
+STEP 8 — FINAL CONFIRMATION
+-----------------------------------
+Before finishing, confirm ALL of this:
+
+✔ dist folder is generated correctly  
+✔ dist is copied into android assets  
+✔ index.html exists inside APK assets  
+✔ App loads UI instead of blank screen  
+✔ No 404 errors in WebView  
+✔ No JS crash on startup  
+
+-----------------------------------
+IMPORTANT RULES
+-----------------------------------
+- DO NOT skip steps
+- DO NOT assume anything is already correct
+- DO NOT leave partial fixes
+- VERIFY each step before moving on
+- If something fails, explain WHY and fix it
+
+The goal is simple:
+When I open the APK, my app UI must load immediately — no blank screen.

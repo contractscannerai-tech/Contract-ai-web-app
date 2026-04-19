@@ -14,10 +14,11 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// BASE_PATH controls the public asset prefix. For CI builds (e.g. Capacitor
-// wrapping the static bundle), default to "/" so the build succeeds without
-// any Replit-specific environment configuration.
-const basePath = process.env.BASE_PATH ?? "/";
+// BASE_PATH controls the public asset prefix. For Capacitor builds we want
+// relative paths ("./") so assets load correctly inside the WebView regardless
+// of the underlying URL scheme. The Replit dev server overrides this via the
+// BASE_PATH env when needed.
+const basePath = process.env.BASE_PATH ?? "./";
 
 export default defineConfig({
   base: basePath,
