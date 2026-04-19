@@ -8,7 +8,7 @@ export function NetworkBanner() {
   const { toast } = useToast();
 
   useEffect(() => {
-    void initNetworkMonitor();
+    initNetworkMonitor();
     installFetchGuard();
     registerOfflineToast((opts) => toast(opts));
   }, [toast]);

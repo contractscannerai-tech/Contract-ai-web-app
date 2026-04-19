@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 
 let _online = typeof navigator === "undefined" ? true : navigator.onLine;
 const listeners = new Set<(online: boolean) => void>();
@@ -12,25 +11,11 @@ function emit(next: boolean) {
 
 let _initialized = false;
 
-export async function initNetworkMonitor(): Promise<void> {
-  if (_initialized) return;
+export function initNetworkMonitor(): void {
+  if (_initialized || typeof window === "undefined") return;
   _initialized = true;
-
-  if (typeof window !== "undefined") {
-    window.addEventListener("online", () => emit(true));
-    window.addEventListener("offline", () => emit(false));
-  }
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const { Network } = await import("@capacitor/network");
-      const status = await Network.getStatus();
-      emit(status.connected);
-      await Network.addListener("networkStatusChange", (s) => emit(s.connected));
-    } catch {
-      // Plugin unavailable — fall back to navigator.onLine listeners only.
-    }
-  }
+  window.addEventListener("online", () => emit(true));
+  window.addEventListener("offline", () => emit(false));
 }
 
 export function isOnline(): boolean {
@@ -64,7 +49,7 @@ export function registerOfflineToast(fn: typeof _toastFn): void {
 let _lastToastAt = 0;
 function showOfflineToast() {
   const now = Date.now();
-  if (now - _lastToastAt < 4000) return; // Throttle to once every 4s
+  if (now - _lastToastAt < 4000) return;
   _lastToastAt = now;
   _toastFn?.({
     title: "Internet connection required",
@@ -73,15 +58,12 @@ function showOfflineToast() {
   });
 }
 
-// Wrap the global fetch so every API/network call is gated by connectivity.
-// External calls made through other libraries (Supabase, etc.) also use
-// window.fetch under the hood, so this catches them too.
 export function installFetchGuard(): void {
   if (typeof window === "undefined") return;
-  const original = window.fetch.bind(window);
   if ((window as unknown as { __caiFetchPatched?: boolean }).__caiFetchPatched) return;
   (window as unknown as { __caiFetchPatched?: boolean }).__caiFetchPatched = true;
 
+  const original = window.fetch.bind(window);
   window.fetch = async (...args: Parameters<typeof fetch>) => {
     if (!_online) {
       showOfflineToast();
@@ -90,7 +72,6 @@ export function installFetchGuard(): void {
     try {
       return await original(...args);
     } catch (err) {
-      // Network-layer failures: surface a friendly toast but rethrow original.
       if (err instanceof TypeError && /fetch|network|failed/i.test(err.message)) {
         if (!_online || !navigator.onLine) showOfflineToast();
       }

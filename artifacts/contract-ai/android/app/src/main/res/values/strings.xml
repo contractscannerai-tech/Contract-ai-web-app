@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">ContractAI</string>
-    <string name="title_activity_main">ContractAI</string>
-    <string name="package_name">com.contractai.app</string>
-    <string name="custom_url_scheme">com.contractai.app</string>
-</resources>
