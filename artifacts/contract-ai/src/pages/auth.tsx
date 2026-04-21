@@ -122,10 +122,12 @@ export default function AuthPage() {
   async function handleGoogleAuth() {
     setGoogleLoading(true);
     try {
+      const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const redirectTo = `${window.location.origin}${base}/auth/callback`;
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: "https://contract-ai--Contractaiscan.replit.app/auth/callback",
+          redirectTo,
           queryParams: { access_type: "offline", prompt: "consent" },
         },
       });

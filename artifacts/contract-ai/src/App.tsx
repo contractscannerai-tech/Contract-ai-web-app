@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useState, useCallback, useEffect } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { supabase } from "@/lib/supabase";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -50,6 +51,23 @@ function normalizeWouterBase(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
+function AuthRedirector() {
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session && location === "/auth") {
+        setLocation("/dashboard", { replace: true });
+      }
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, [location, setLocation]);
+
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
@@ -94,6 +112,7 @@ function AppGate() {
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
       {splashDone && (
         <WouterRouter base={normalizeWouterBase(import.meta.env.BASE_URL)}>
+          <AuthRedirector />
           <Router />
         </WouterRouter>
       )}
