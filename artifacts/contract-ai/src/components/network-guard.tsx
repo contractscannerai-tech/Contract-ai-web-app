@@ -16,8 +16,15 @@ export function NetworkGuardProvider({ children }: { children: ReactNode }) {
   const [blockedAction, setBlockedAction] = useState<string>("AI feature");
 
   useEffect(() => {
-    const on = () => setIsOnline(true);
-    const off = () => setIsOnline(false);
+    const on = () => {
+      setIsOnline(true);
+      setShowModal(false);
+    };
+    const off = () => {
+      setIsOnline(false);
+      setBlockedAction("this secure feature");
+      setShowModal(true);
+    };
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
     return () => {

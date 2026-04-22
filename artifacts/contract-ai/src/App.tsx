@@ -55,15 +55,30 @@ function AuthRedirector() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session && location === "/auth") {
+    // On mount: recover any persisted session from localStorage and redirect
+    // away from the login page if the user is already authenticated.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && location === "/auth") {
         setLocation("/dashboard", { replace: true });
       }
     });
+
+    // Also handle real-time auth events (OAuth callback, token refresh, etc.)
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
+        session &&
+        location === "/auth"
+      ) {
+        setLocation("/dashboard", { replace: true });
+      }
+    });
+
     return () => {
       data.subscription.unsubscribe();
     };
-  }, [location, setLocation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return null;
 }
