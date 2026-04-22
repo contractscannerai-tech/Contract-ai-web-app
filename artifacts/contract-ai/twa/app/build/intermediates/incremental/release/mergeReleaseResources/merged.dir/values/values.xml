@@ -531,7 +531,6 @@
     </attr>
     <attr format="reference" name="polarRelativeTo"/>
     <attr format="reference" name="popupMenuBackground"/>
-    <attr format="reference" name="postSplashScreenTheme"/>
     <attr format="string|reference|enum" name="quantizeMotionInterpolator">
         <enum name="easeInOut" value="0"/>
         <enum name="easeIn" value="1"/>
@@ -564,7 +563,6 @@
     <attr format="boolean" name="singleSelection"/>
     <attr format="float" name="sizePercent"/>
     <attr format="reference" name="sliderStyle"/>
-    <attr format="dimension" name="splashScreenIconSize"/>
     <attr format="enum" name="splitLayoutDirection">
         <enum name="locale" value="0"/>
         <enum name="ltr" value="1"/>
@@ -670,10 +668,6 @@
         <enum name="position" value="0"/>
         <enum name="path" value="1"/>
     </attr>
-    <attr format="reference" name="windowSplashScreenAnimatedIcon"/>
-    <attr format="integer" name="windowSplashScreenAnimationDuration"/>
-    <attr format="color" name="windowSplashScreenBackground"/>
-    <attr format="color" name="windowSplashScreenIconBackgroundColor"/>
     <bool name="abc_action_bar_embed_tabs">true</bool>
     <bool name="abc_config_actionMenuItemAllCaps">true</bool>
     <bool name="config_materialPreferenceIconSpaceReserved">false</bool>
@@ -1828,13 +1822,6 @@
     <dimen name="preference_seekbar_value_minWidth">36dp</dimen>
     <dimen name="preferences_detail_width">300dp</dimen>
     <dimen name="preferences_header_width">384dp</dimen>
-    <dimen name="splashscreen_icon_mask_size_no_background">410dp</dimen>
-    <dimen name="splashscreen_icon_mask_size_with_background">342dp</dimen>
-    <dimen name="splashscreen_icon_mask_stroke_no_background">109dp</dimen>
-    <dimen name="splashscreen_icon_mask_stroke_with_background">92dp</dimen>
-    <dimen name="splashscreen_icon_size">?splashScreenIconSize</dimen>
-    <dimen name="splashscreen_icon_size_no_background">288dp</dimen>
-    <dimen name="splashscreen_icon_size_with_background">240dp</dimen>
     <dimen name="tooltip_corner_radius">2dp</dimen>
     <dimen name="tooltip_horizontal_padding">16dp</dimen>
     <dimen name="tooltip_margin">8dp</dimen>
@@ -1970,7 +1957,6 @@
     <integer name="bottom_sheet_slide_duration">150</integer>
     <integer name="cancel_button_image_alpha">127</integer>
     <integer name="config_tooltipAnimTime">150</integer>
-    <integer name="default_icon_animation_duration">10000</integer>
     <integer name="design_snackbar_text_max_lines">2</integer>
     <integer name="design_tab_indicator_anim_duration_ms">300</integer>
     <integer name="hide_password_duration">320</integer>
@@ -2700,9 +2686,6 @@
     <item name="android:windowMinWidthMinor">@dimen/abc_dialog_min_width_minor</item>
   </style>
     <style name="Base.Theme.MaterialComponents.Light.DialogWhenLarge" parent="Theme.MaterialComponents.Light"/>
-    <style name="Base.Theme.SplashScreen" parent="Base.v21.Theme.SplashScreen"/>
-    <style name="Base.Theme.SplashScreen.DayNight" parent="Base.Theme.SplashScreen.Light"/>
-    <style name="Base.Theme.SplashScreen.Light" parent="Base.v21.Theme.SplashScreen.Light"/>
     <style name="Base.ThemeOverlay.AppCompat" parent="Platform.ThemeOverlay.AppCompat"/>
     <style name="Base.ThemeOverlay.AppCompat.ActionBar">
         <item name="colorControlNormal">?android:attr/textColorPrimary</item>
@@ -5679,10 +5662,6 @@
     <item name="shapeAppearanceOverlay">@null</item>
   </style>
     <style name="Base.Widget.MaterialComponents.TextView" parent="Widget.AppCompat.TextView"/>
-    <style name="Base.v21.Theme.SplashScreen" parent="android:Theme.DeviceDefault.NoActionBar">
-    </style>
-    <style name="Base.v21.Theme.SplashScreen.Light" parent="android:Theme.DeviceDefault.Light.NoActionBar">
-    </style>
     <style name="BasePreferenceThemeOverlay">
         <item name="android:scrollbars">vertical</item>
         <item name="checkBoxPreferenceStyle">@style/Preference.CheckBoxPreference.Material</item>
@@ -6322,6 +6301,7 @@
         <item name="android:navigationBarColor">@color/colorBackground</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
     <style name="TextAppearance.AppCompat" parent="Base.TextAppearance.AppCompat"/>
     <style name="TextAppearance.AppCompat.Body1" parent="Base.TextAppearance.AppCompat.Body1"/>
@@ -6866,32 +6846,6 @@
     <item name="windowActionBar">false</item>
     <item name="windowNoTitle">true</item>
   </style>
-    <style name="Theme.SplashScreen" parent="Theme.SplashScreen.Common">
-        <item name="postSplashScreenTheme">?android:attr/theme</item>
-        <item name="windowSplashScreenAnimationDuration">
-            @integer/default_icon_animation_duration
-        </item>
-        <item name="windowSplashScreenBackground">?android:colorBackground</item>
-        <item name="windowSplashScreenAnimatedIcon">@android:drawable/sym_def_app_icon</item>
-
-    </style>
-    <style name="Theme.SplashScreen.Common" parent="Base.Theme.SplashScreen.DayNight">
-        <item name="android:windowActionBar">false</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowBackground">
-            @drawable/compat_splash_screen_no_icon_background
-        </item>
-        <item name="android:opacity">opaque</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:fitsSystemWindows">false</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="splashScreenIconSize">@dimen/splashscreen_icon_size_no_background</item>
-    </style>
-    <style name="Theme.SplashScreen.IconBackground" parent="Theme.SplashScreen">
-        <item name="android:windowBackground">@drawable/compat_splash_screen</item>
-        <item name="splashScreenIconSize">@dimen/splashscreen_icon_size_with_background</item>
-    </style>
     <style name="ThemeOverlay.AppCompat" parent="Base.ThemeOverlay.AppCompat"/>
     <style name="ThemeOverlay.AppCompat.ActionBar" parent="Base.ThemeOverlay.AppCompat.ActionBar"/>
     <style name="ThemeOverlay.AppCompat.Dark" parent="Base.ThemeOverlay.AppCompat.Dark"/>

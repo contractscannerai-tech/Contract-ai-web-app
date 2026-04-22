@@ -1,3 +1,2 @@
 #!/usr/bin/env sh
-GRADLE_BIN="/home/runner/.gradle/wrapper/dists/gradle-8.11.1-bin/bpt9gzteqjrbo1mjrsomdt32c/gradle-8.11.1/bin/gradle"
-exec "$GRADLE_BIN" "$@"
+exec "/home/runner/.gradle/wrapper/dists/gradle-8.11.1-bin/bpt9gzteqjrbo1mjrsomdt32c/gradle-8.11.1/bin/gradle" "$@"

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.contractaiscan.app-mergeReleaseResources-43:/values-fi/values-fi.xml",
+            "outputFile": "com.contractaiscan.app-mergeReleaseResources-42:/values-fi/values-fi.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.11.1/transforms/426cba736788c10610f62b9d05d6fd7e/transformed/preference-1.2.1/res/values-fi/values-fi.xml",

@@ -31,3 +31,4 @@ string retry
 style AppTheme
 style SplashTheme
 xml filepaths
+xml network_security_config

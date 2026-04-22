@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.contractaiscan.app-mergeReleaseResources-43:/values-hy/values-hy.xml",
+            "outputFile": "com.contractaiscan.app-mergeReleaseResources-42:/values-hy/values-hy.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.11.1/transforms/0fdbf0b4d578198d489c05fd2395925a/transformed/biometric-1.2.0-alpha05/res/values-hy/values-hy.xml",

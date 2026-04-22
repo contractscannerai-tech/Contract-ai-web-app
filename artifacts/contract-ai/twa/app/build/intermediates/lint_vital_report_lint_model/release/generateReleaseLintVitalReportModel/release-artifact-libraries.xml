@@ -104,19 +104,6 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
-      name="androidx.core:core-splashscreen:1.0.1@aar"
-      jars="/home/runner/.gradle/caches/8.11.1/transforms/c8e870c5c5d7a3249887702fd2d55da5/transformed/jetified-core-splashscreen-1.0.1/jars/classes.jar"
-      resolved="androidx.core:core-splashscreen:1.0.1"
-      folder="/home/runner/.gradle/caches/8.11.1/transforms/c8e870c5c5d7a3249887702fd2d55da5/transformed/jetified-core-splashscreen-1.0.1"
-      manifest="AndroidManifest.xml"
-      resFolder="res"
-      assetsFolder="assets"
-      lintJar="lint.jar"
-      publicResources="public.txt"
-      symbolFile="R.txt"
-      externalAnnotations="annotations.zip"
-      proguardRules="proguard.txt"/>
-  <library
       name="androidx.constraintlayout:constraintlayout:2.2.1@aar"
       jars="/home/runner/.gradle/caches/8.11.1/transforms/ff7756e850ca45f821e92121a947cfed/transformed/constraintlayout-2.2.1/jars/classes.jar"
       resolved="androidx.constraintlayout:constraintlayout:2.2.1"

@@ -983,18 +983,6 @@ library {
 }
 library {
   maven_library {
-    groupId: "androidx.core"
-    artifactId: "core-splashscreen"
-    version: "1.0.1"
-  }
-  digests {
-    sha256: "%\310\023\256w\225\311\235\322\006(RpC\370\320B^\262\350&\346\304,\267z\313\266\300\035\336h"
-  }
-  repo_index {
-  }
-}
-library {
-  maven_library {
     groupId: "androidx.preference"
     artifactId: "preference"
     version: "1.2.1"
@@ -1734,45 +1722,40 @@ library_dependencies {
 library_dependencies {
   library_index: 83
   library_dep_index: 1
-  library_dep_index: 3
-}
-library_dependencies {
-  library_index: 84
-  library_dep_index: 1
   library_dep_index: 49
   library_dep_index: 7
   library_dep_index: 51
-  library_dep_index: 85
+  library_dep_index: 84
   library_dep_index: 76
-  library_dep_index: 87
+  library_dep_index: 86
   library_dep_index: 9
 }
 library_dependencies {
-  library_index: 85
+  library_index: 84
   library_dep_index: 60
   library_dep_index: 51
   library_dep_index: 39
-  library_dep_index: 86
+  library_dep_index: 85
   library_dep_index: 28
   library_dep_index: 36
   library_dep_index: 45
   library_dep_index: 3
 }
 library_dependencies {
-  library_index: 86
+  library_index: 85
   library_dep_index: 3
   library_dep_index: 9
 }
 library_dependencies {
-  library_index: 87
+  library_index: 86
   library_dep_index: 1
   library_dep_index: 57
   library_dep_index: 7
-  library_dep_index: 88
+  library_dep_index: 87
   library_dep_index: 77
 }
 library_dependencies {
-  library_index: 88
+  library_index: 87
   library_dep_index: 3
   library_dep_index: 23
   library_dep_index: 1
@@ -1780,15 +1763,15 @@ library_dependencies {
   library_dep_index: 7
 }
 library_dependencies {
-  library_index: 89
+  library_index: 88
   library_dep_index: 1
   library_dep_index: 1
   library_dep_index: 9
-  library_dep_index: 90
+  library_dep_index: 89
 }
 library_dependencies {
-  library_index: 90
-  library_dep_index: 91
+  library_index: 89
+  library_dep_index: 90
 }
 module_dependencies {
   module_name: "base"
@@ -1798,11 +1781,10 @@ module_dependencies {
   dependency_index: 79
   dependency_index: 80
   dependency_index: 82
-  dependency_index: 83
   dependency_index: 69
   dependency_index: 13
-  dependency_index: 84
-  dependency_index: 89
+  dependency_index: 83
+  dependency_index: 88
 }
 repositories {
   maven_repo {
