@@ -51,36 +51,19 @@ function normalizeWouterBase(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
+// Handles OAuth redirects only — session recovery on load is handled in AppGate
+// before the router mounts, so there is never a flash of the wrong page.
 function AuthRedirector() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // On mount: recover any persisted session from localStorage.
-    // If the user is on the landing page ("/") or the login page ("/auth"),
-    // send them straight to the dashboard — they never need to log in again.
-    const unauthenticatedRoutes = ["/", "/auth"];
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && unauthenticatedRoutes.includes(location)) {
-        setLocation("/dashboard", { replace: true });
-      }
-    });
-
-    // Also handle real-time auth events (OAuth callback, token refresh, etc.)
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
-        session &&
-        unauthenticatedRoutes.includes(location)
-      ) {
+      if (event === "SIGNED_IN" && session) {
         setLocation("/dashboard", { replace: true });
       }
     });
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => data.subscription.unsubscribe();
+  }, [setLocation]);
 
   return null;
 }
@@ -118,16 +101,43 @@ function AppGate() {
     return sessionStorage.getItem("contractai_splash_done") === "1";
   });
 
+  // Check the session while the splash is still showing so we know exactly
+  // where to land *before* the router ever mounts. This prevents any flash of
+  // the landing page for users who are already logged in.
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // Rewrite the browser URL to /dashboard before Wouter reads it.
+        // The router will start at /dashboard directly — zero flash.
+        const base = normalizeWouterBase(import.meta.env.BASE_URL);
+        const target = (base || "") + "/dashboard";
+        if (!window.location.pathname.includes("/dashboard")) {
+          window.history.replaceState({}, "", target);
+        }
+      }
+      setSessionChecked(true);
+    });
+  }, []);
+
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("contractai_splash_done", "1");
     setSplashDone(true);
   }, []);
 
+  // Keep the splash visible until BOTH the animation AND the session check
+  // are done. This way the router always mounts at the correct URL.
+  const isReady = splashDone && sessionChecked;
+
   return (
     <NetworkGuardProvider>
       <NetworkBanner />
+      {/* Splash covers everything while animation plays and session resolves */}
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {splashDone && (
+      {/* Brief blank during session check if splash was already skipped */}
+      {splashDone && !sessionChecked && <div className="min-h-screen bg-background" />}
+      {isReady && (
         <WouterRouter base={normalizeWouterBase(import.meta.env.BASE_URL)}>
           <AuthRedirector />
           <Router />

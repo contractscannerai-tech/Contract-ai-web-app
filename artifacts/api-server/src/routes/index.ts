@@ -14,6 +14,7 @@ import auditRouter from "./audit.js";
 import biometricRouter from "./biometric.js";
 import teamsRouter from "./teams.js";
 import securityRouter from "./security.js";
+import greetingsRouter from "./greetings.js";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,7 @@ router.use("/audit", auditRouter);
 router.use("/biometric", biometricRouter);
 router.use("/teams", teamsRouter);
 router.use("/security", securityRouter);
+router.use("/greetings", greetingsRouter);
 router.use(extrasRouter);
 
 export default router;

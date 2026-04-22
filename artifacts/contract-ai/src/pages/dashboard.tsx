@@ -15,6 +15,7 @@ import { AiThoughtBubble } from "@/components/ai-thought-bubble";
 import { FeatureGrid } from "@/components/feature-grid";
 import { useI18n } from "@/lib/i18n";
 import { ReviewPromptModal } from "@/components/review-prompt-modal";
+import { WelcomeBackDialog } from "@/components/welcome-back-dialog";
 
 const riskBadge = (level: string | null) => {
   if (!level) return null;
@@ -63,6 +64,7 @@ export default function DashboardPage() {
   return (
     <AppLayout user={user} onLogout={handleLogout}>
       <ReviewPromptModal trigger={user?.contractsUsed ?? 0} />
+      <WelcomeBackDialog userName={user?.email?.split("@")[0]} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         <div className="flex items-center justify-between">
