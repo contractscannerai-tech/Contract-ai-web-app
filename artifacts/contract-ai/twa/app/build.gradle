@@ -32,7 +32,7 @@ def twaManifest = [
     navigationColorDark: '#6200EE', // The color used for the dark navbar.
     navigationDividerColor: '#6200EE', // The navbar divider color.
     navigationDividerColorDark: '#6200EE', // The dark navbar divider color.
-    backgroundColor: '#FFFFFF', // The color used for the splash screen background.
+    backgroundColor: '#0D0F1A', // The color used for the splash screen background.
     enableNotifications: false, // Set to true to enable notification delegation.
     // Every shortcut must include the following fields:
     // - name: String that will show up in the shortcut.
@@ -58,7 +58,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 35
         versionCode 2
-        versionName "y"
+        versionName "1.0.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -81,7 +81,7 @@ android {
 
         
             // This is used by Meta Quest.
-            resValue "string", "fullScopeUrl", 'http://localhost:22926/'
+            resValue "string", "fullScopeUrl", 'https://contract-ai--Contractaiscan.replit.app/'
         
 
         
@@ -150,9 +150,18 @@ android {
 
         
     }
+    signingConfigs {
+        release {
+            storeFile file('../android.keystore')
+            storePassword 'android123'
+            keyAlias 'contractai'
+            keyPassword 'android123'
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
@@ -210,4 +219,8 @@ dependencies {
     
         implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
     
+    implementation 'com.airbnb.android:lottie:6.6.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
 }

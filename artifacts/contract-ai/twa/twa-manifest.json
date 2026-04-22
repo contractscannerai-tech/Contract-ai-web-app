@@ -10,11 +10,11 @@
   "navigationColorDark": "#6200EE",
   "navigationDividerColor": "#6200EE",
   "navigationDividerColorDark": "#6200EE",
-  "backgroundColor": "#FFFFFF",
+  "backgroundColor": "#0D0F1A",
   "enableNotifications": false,
   "startUrl": "/",
-  "iconUrl": "http://localhost:22926/icon-512.png",
-  "maskableIconUrl": "http://localhost:22926/icon-512.png",
+  "iconUrl": "https://contract-ai--Contractaiscan.replit.app/icon-512.png",
+  "maskableIconUrl": "https://contract-ai--Contractaiscan.replit.app/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "/home/runner/workspace/artifacts/contract-ai/twa/android.keystore",
@@ -24,7 +24,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "unknown",
-  "webManifestUrl": "http://localhost:22926/manifest.json",
+  "webManifestUrl": "https://contract-ai--Contractaiscan.replit.app/manifest.json",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,10 +33,12 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "http://localhost:22926/",
+  "fullScopeUrl": "https://contract-ai--Contractaiscan.replit.app/",
   "minSdkVersion": 21,
   "orientation": "portrait",
-  "fingerprints": [],
+  "fingerprints": [
+    "C3:FF:D3:FA:41:B9:A5:9C:D6:68:9D:3C:77:38:F9:70:C6:DE:82:6A:DE:E7:73:50:9E:AE:27:14:E5:A9:6B:8D"
+  ],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],

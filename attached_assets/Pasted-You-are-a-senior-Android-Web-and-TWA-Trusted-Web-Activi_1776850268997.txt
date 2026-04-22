@@ -1,0 +1,245 @@
+You are a senior Android, Web, and TWA (Trusted Web Activity) engineer.
+
+Your task is to take my existing live web application and build a production-grade Android app using Bubblewrap (TWA) with zero compromises. This must feel like a premium native app, not a cheap web wrapper.
+
+Follow ALL instructions EXACTLY. Do NOT skip anything.
+
+---
+
+1. TWA + BUBBLEWRAP SETUP (FOUNDATION)
+
+- Initialize a complete Bubblewrap project
+
+- Correctly configure:
+  
+  - Application ID (package name)
+  - Signing keys
+  - Build system
+
+- Link the TWA to my LIVE production URL (not local files)
+
+- Ensure the app ALWAYS loads from the live site
+
+- Properly initialize everything required for TWA verification:
+  
+  - Generate SHA256 fingerprint
+  - Configure Digital Asset Links
+  - Ensure full verification handshake works
+
+- If any “token” or initialization step is required by Bubblewrap or TWA verification, COMPLETE it fully (do not skip)
+
+---
+
+2. DIGITAL ASSET LINKS (CRITICAL – NO BROWSER BAR)
+
+- Generate assetlinks.json
+
+- Place it at:
+  /.well-known/assetlinks.json on my live domain
+
+- Ensure it includes:
+  
+  - Correct package name
+  - Correct SHA256 fingerprint
+
+- Verify:
+  
+  - TWA passes verification
+  - Browser UI (URL bar) is COMPLETELY removed
+
+This must result in a true fullscreen native experience
+
+---
+
+3. UI CONSISTENCY (MUST MATCH WEBSITE EXACTLY)
+
+- The app must display the exact same UI as the website
+
+- DO NOT redesign UI
+
+- DO NOT introduce browser elements
+
+- Remove:
+  
+  - URL bar
+  - Refresh buttons
+  - Browser headers
+
+- Force:
+  
+  - Fullscreen immersive experience
+  - Smooth transitions
+
+---
+
+4. LOGO & BRANDING (VERY IMPORTANT – DO NOT MISS)
+
+- Use the purple “paper logo” from the animation reference I will provide
+- This is the ONLY official logo
+
+Generate:
+
+- Full adaptive icon set (ALL densities: LDPI → XXXHDPI)
+- High-resolution launcher icons
+- Proper Android adaptive icons
+
+Splash Screen:
+
+- Create a high-resolution splash screen using the purple paper logo
+
+- Must look premium (NOT default Android splash)
+
+- Ensure smooth transition:
+  Splash → App (no flicker, no double splash)
+
+---
+
+5. APP “WEIGHT” (TRUST BUILDING)
+
+Goal: Make the app feel real and trustworthy
+
+- Final app size MUST be 10MB+
+- Do NOT produce a 1MB lightweight wrapper
+
+To achieve this:
+
+- Bundle:
+  - High-resolution assets
+  - Animations (Lottie or similar if needed)
+  - Branding resources
+
+Reason:
+
+- Users trust apps with real size (important for legal document handling)
+
+---
+
+6. PERSISTENT AUTHENTICATION (ZERO LOGIN REPEAT)
+
+- Users must stay logged in ALWAYS
+
+Implement:
+
+- Persistent session storage (e.g. Supabase or equivalent)
+- Store session securely on device
+
+Behavior:
+
+- If session exists → go directly to dashboard
+- If no session → show login
+
+CRITICAL:
+
+- Closing the app MUST NOT log the user out
+- Removing from recent apps MUST NOT log out user
+- Only manual logout clears session
+
+---
+
+7. BIOMETRIC SECURITY (WHATSAPP-LEVEL)
+
+- Use device-native biometrics ONLY
+  - Fingerprint OR Face ID
+
+DO NOT create custom biometric systems
+
+Flow:
+
+- On app launch:
+  
+  - Check if biometric lock is enabled
+  - Trigger device authentication
+  - Wait for success response from device
+
+- If success → unlock app
+
+- If fail → stay locked
+
+Rules:
+
+- If device has no biometrics → feature unavailable
+- Add toggle:
+  “Enable App Lock (Biometrics)”
+
+Purpose:
+
+- Protect sensitive legal documents
+
+---
+
+8. PERFORMANCE & STABILITY
+
+- Prevent blank screen issues
+- Ensure app always loads correctly
+
+Implement:
+
+- Proper loading fallback
+- Error handling
+- Network checks
+
+Offline:
+
+- Cache last loaded content
+- Show “No Internet” message when offline
+
+---
+
+9. LIVE UPDATE BEHAVIOR (VERY IMPORTANT)
+
+- App MUST always reflect live website
+
+Meaning:
+
+- Any changes to website → instantly visible in app
+- NO need to rebuild app for updates
+
+---
+
+10. PROFESSIONAL EXPERIENCE
+
+- No flickers
+- No double splash
+- Smooth animations
+- Consistent purple branding throughout
+
+---
+
+11. BUILD OUTPUT (CRITICAL NAMING RULE)
+
+After build is complete:
+
+- Generate BOTH:
+  - APK
+  - AAB (for Play Store)
+
+VERY IMPORTANT NAMING RULE:
+
+- Filenames MUST include the word “apple”
+
+Examples:
+
+- contract-ai-apple-v1.apk
+- contract-ai-apple-v1.aab
+
+Purpose:
+
+- To clearly differentiate this build from previous versions
+
+---
+
+12. OUTPUT LOCATION
+
+- Ensure build files are placed inside project files / artifacts
+- Clearly indicate where APK and AAB are located
+
+---
+
+FINAL REQUIREMENT
+
+- Deliver a fully working, Play Store–ready Android app
+- DO NOT skip steps
+- DO NOT simplify anything
+- Ensure everything works end-to-end
+
+This must feel like a premium, secure, production-grade mobile app, not a prototype.
