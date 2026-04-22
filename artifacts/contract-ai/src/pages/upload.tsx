@@ -5,7 +5,7 @@ import {
   Loader2, Upload, FileText, Image, X,
   CheckCircle, AlertCircle, Sparkles, ShieldCheck,
 } from "lucide-react";
-import { useAnalyzeContract, useGetMe, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatFileSize } from "@/lib/utils";
@@ -115,7 +115,7 @@ export default function UploadPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const networkGuard = useNetworkGuard();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -129,7 +129,6 @@ export default function UploadPage() {
 
   const { data: user } = useGetMe();
   const logout = useLogout();
-  const analyzeContract = useAnalyzeContract();
 
   async function handleLogout() {
     await logout.mutateAsync({});
@@ -240,7 +239,16 @@ export default function UploadPage() {
     setAnalysisFailed(false);
     setStage("analyzing");
     try {
-      await analyzeContract.mutateAsync({ id: uploadedContractId });
+      const res = await fetch(`/api/contracts/${uploadedContractId}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ language: lang }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? `Analysis failed (${res.status})`);
+      }
       queryClient.invalidateQueries();
 
       setStage("done");

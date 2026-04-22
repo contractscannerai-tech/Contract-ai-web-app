@@ -239,9 +239,9 @@ function calculateRiskLevelFromScore(score: number): "low" | "medium" | "high" {
 
 router.post("/:id/analyze", requireAuth, analysisLimiter, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params as { id: string };
-  const { language } = req.body as { language?: string };
 
   try {
+    const { language = "en" } = (req.body ?? {}) as { language?: string };
     const contracts = await db
       .select()
       .from(contractsTable)
