@@ -1,0 +1,287 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.contractaiscan.app"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+9        android:targetSdkVersion="36" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:4:5-66
+11-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:5:5-78
+12-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+13-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:6:5-71
+13-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:6:22-69
+14    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+14-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:7:5-73
+14-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:7:22-71
+15
+16    <queries>
+16-->[com.google.androidbrowserhelper:androidbrowserhelper:2.5.0] /home/runner/.gradle/caches/8.11.1/transforms/6f8ac0a6103bb18bd369b2f09a5368af/transformed/jetified-androidbrowserhelper-2.5.0/AndroidManifest.xml:26:5-34:15
+17        <intent>
+17-->[com.google.androidbrowserhelper:androidbrowserhelper:2.5.0] /home/runner/.gradle/caches/8.11.1/transforms/6f8ac0a6103bb18bd369b2f09a5368af/transformed/jetified-androidbrowserhelper-2.5.0/AndroidManifest.xml:27:9-33:18
+18            <action android:name="android.intent.action.VIEW" />
+18-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:78:17-68
+18-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:78:25-66
+19
+20            <category android:name="android.intent.category.BROWSABLE" />
+20-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:80:17-77
+20-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:80:27-75
+21
+22            <data android:scheme="https" />
+22-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:81:17-83:69
+22-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:82:21-43
+23        </intent>
+24    </queries>
+25
+26    <permission
+26-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+27        android:name="com.contractaiscan.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+27-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+28        android:protectionLevel="signature" />
+28-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+29
+30    <uses-permission android:name="com.contractaiscan.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+30-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+30-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+31
+32    <application
+32-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:9:5-97:19
+33        android:name="com.contractaiscan.app.ContractAIApplication"
+33-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:10:9-46
+34        android:allowBackup="false"
+34-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:11:9-36
+35        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+35-->[androidx.core:core:1.13.1] /home/runner/.gradle/caches/8.11.1/transforms/be9373992e7383486f75afab7a551742/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+36        android:extractNativeLibs="true"
+37        android:hardwareAccelerated="true"
+37-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:17:9-43
+38        android:icon="@mipmap/ic_launcher"
+38-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:12:9-43
+39        android:label="@string/app_name"
+39-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:14:9-41
+40        android:roundIcon="@mipmap/ic_launcher_round"
+40-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:13:9-54
+41        android:supportsRtl="true"
+41-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:16:9-35
+42        android:theme="@style/AppTheme" >
+42-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:15:9-40
+43        <activity
+43-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:19:9-29:20
+44            android:name="com.contractaiscan.app.SplashActivity"
+44-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:20:13-43
+45            android:exported="true"
+45-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:21:13-36
+46            android:launchMode="singleTask"
+46-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:23:13-44
+47            android:screenOrientation="portrait"
+47-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:24:13-49
+48            android:theme="@style/SplashTheme" >
+48-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:22:13-47
+49            <intent-filter>
+49-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:25:13-28:29
+50                <action android:name="android.intent.action.MAIN" />
+50-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:26:17-68
+50-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:26:25-66
+51
+52                <category android:name="android.intent.category.LAUNCHER" />
+52-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:27:17-76
+52-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:27:27-74
+53            </intent-filter>
+54        </activity>
+55        <activity
+55-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:31:9-85:20
+56            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+56-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:32:13-84
+57            android:exported="true"
+57-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:33:13-36
+58            android:launchMode="singleTask"
+58-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:34:13-44
+59            android:screenOrientation="portrait" >
+59-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:35:13-49
+60            <meta-data
+60-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:37:13-39:74
+61                android:name="android.support.customtabs.trusted.DEFAULT_URL"
+61-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:38:17-78
+62                android:value="https://app--contractscanner.replit.app" />
+62-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:39:17-72
+63            <meta-data
+63-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:41:13-43:54
+64                android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
+64-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:42:17-83
+65                android:value="@color/colorPrimary" />
+65-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:43:17-52
+66            <meta-data
+66-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:45:13-47:54
+67                android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR_DARK"
+67-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:46:17-88
+68                android:value="@color/colorPrimary" />
+68-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:47:17-52
+69            <meta-data
+69-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:49:13-51:57
+70                android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
+70-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:50:17-87
+71                android:value="@color/colorBackground" />
+71-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:51:17-55
+72            <meta-data
+72-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:53:13-55:57
+73                android:name="android.support.customtabs.trusted.NAVIGATION_BAR_DIVIDER_COLOR"
+73-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:54:17-95
+74                android:value="@color/colorBackground" />
+74-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:55:17-55
+75            <meta-data
+75-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:57:13-59:59
+76                android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
+76-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:58:17-88
+77                android:resource="@drawable/splash_icon" />
+77-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:59:17-57
+78            <meta-data
+78-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:61:13-63:57
+79                android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
+79-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:62:17-97
+80                android:value="@color/colorBackground" />
+80-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:63:17-55
+81            <meta-data
+81-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:65:13-67:38
+82                android:name="android.support.customtabs.trusted.SPLASH_SCREEN_FADE_OUT_DURATION"
+82-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:66:17-98
+83                android:value="300" />
+83-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:67:17-36
+84            <meta-data
+84-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:69:13-71:70
+85                android:name="android.support.customtabs.trusted.FILE_PROVIDER_AUTHORITY"
+85-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:70:17-90
+86                android:value="com.contractaiscan.app.fileprovider" />
+86-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:71:17-68
+87            <meta-data
+87-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:73:13-75:45
+88                android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
+88-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:74:17-84
+89                android:value="customtabs" />
+89-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:75:17-43
+90
+91            <intent-filter>
+91-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:77:13-84:29
+92                <action android:name="android.intent.action.VIEW" />
+92-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:78:17-68
+92-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:78:25-66
+93
+94                <category android:name="android.intent.category.DEFAULT" />
+94-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:79:17-75
+94-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:79:27-73
+95                <category android:name="android.intent.category.BROWSABLE" />
+95-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:80:17-77
+95-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:80:27-75
+96
+97                <data
+97-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:81:17-83:69
+98                    android:host="app--contractscanner.replit.app"
+98-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:83:21-67
+99                    android:scheme="https" />
+99-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:82:21-43
+100            </intent-filter>
+101        </activity>
+102
+103        <provider
+103-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:87:9-95:20
+104            android:name="androidx.core.content.FileProvider"
+104-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:88:13-62
+105            android:authorities="com.contractaiscan.app.fileprovider"
+105-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:89:13-70
+106            android:exported="false"
+106-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:90:13-37
+107            android:grantUriPermissions="true" >
+107-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:91:13-47
+108            <meta-data
+108-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:92:13-94:52
+109                android:name="android.support.FILE_PROVIDER_PATHS"
+109-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:93:17-67
+110                android:resource="@xml/filepaths" />
+110-->/home/runner/workspace/artifacts/contract-ai/twa/app/src/main/AndroidManifest.xml:94:17-50
+111        </provider>
+112        <provider
+112-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+113            android:name="androidx.startup.InitializationProvider"
+113-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:25:13-67
+114            android:authorities="com.contractaiscan.app.androidx-startup"
+114-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:26:13-68
+115            android:exported="false" >
+115-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:27:13-37
+116            <meta-data
+116-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+117                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+117-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:30:17-75
+118                android:value="androidx.startup" />
+118-->[androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/37114162b03bece98b93a1e799d091e1/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:31:17-49
+119            <meta-data
+119-->[androidx.lifecycle:lifecycle-process:2.9.0] /home/runner/.gradle/caches/8.11.1/transforms/29ed7261ffc22c8e20ff404ce321f72a/transformed/jetified-lifecycle-process-2.9.0/AndroidManifest.xml:29:13-31:52
+120                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+120-->[androidx.lifecycle:lifecycle-process:2.9.0] /home/runner/.gradle/caches/8.11.1/transforms/29ed7261ffc22c8e20ff404ce321f72a/transformed/jetified-lifecycle-process-2.9.0/AndroidManifest.xml:30:17-78
+121                android:value="androidx.startup" />
+121-->[androidx.lifecycle:lifecycle-process:2.9.0] /home/runner/.gradle/caches/8.11.1/transforms/29ed7261ffc22c8e20ff404ce321f72a/transformed/jetified-lifecycle-process-2.9.0/AndroidManifest.xml:31:17-49
+122            <meta-data
+122-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+123                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+123-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+124                android:value="androidx.startup" />
+124-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+125        </provider>
+126
+127        <uses-library
+127-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:25:9-27:40
+128            android:name="androidx.window.extensions"
+128-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:26:13-54
+129            android:required="false" />
+129-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:27:13-37
+130        <uses-library
+130-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:28:9-30:40
+131            android:name="androidx.window.sidecar"
+131-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:29:13-51
+132            android:required="false" />
+132-->[androidx.window:window:1.0.0] /home/runner/.gradle/caches/8.11.1/transforms/16f7ef78dd5fdb8c61e21e9b7d65b527/transformed/jetified-window-1.0.0/AndroidManifest.xml:30:13-37
+133
+134        <receiver
+134-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+135            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+135-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+136            android:directBootAware="false"
+136-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+137            android:enabled="true"
+137-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+138            android:exported="true"
+138-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+139            android:permission="android.permission.DUMP" >
+139-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+140            <intent-filter>
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+141                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+141-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+141-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+142            </intent-filter>
+143            <intent-filter>
+143-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+144                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+145            </intent-filter>
+146            <intent-filter>
+146-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+147                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+148            </intent-filter>
+149            <intent-filter>
+149-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+150                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/3d905eec5c7e588801f8a288d0868c14/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+151            </intent-filter>
+152        </receiver>
+153    </application>
+154
+155</manifest>

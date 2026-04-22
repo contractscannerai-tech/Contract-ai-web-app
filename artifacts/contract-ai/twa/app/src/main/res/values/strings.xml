@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ContractAI</string>
+    <string name="biometric_prompt_title">Verify Identity</string>
+    <string name="biometric_prompt_subtitle">Use your fingerprint or face to unlock ContractAI</string>
+    <string name="biometric_prompt_cancel">Cancel</string>
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="no_internet_message">Please check your connection and try again.</string>
+    <string name="retry">Retry</string>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorAccent">#8B5CF6</color>
+    <color name="colorBackground">#0D0F1A</color>
+    <color name="colorOnSurface">#FFFFFF</color>
+    <color name="colorPrimary">#7C3AED</color>
+    <color name="colorPrimaryDark">#6D28D9</color>
+    <color name="colorSurface">#1A1D2E</color>
+    <color name="colorText">#FFFFFF</color>
+    <color name="colorTextSecondary">#A0AEC0</color>
+    <string name="app_name">ContractAI</string>
+    <string name="biometric_prompt_cancel">Cancel</string>
+    <string name="biometric_prompt_subtitle">Use your fingerprint or face to unlock ContractAI</string>
+    <string name="biometric_prompt_title">Verify Identity</string>
+    <string name="no_internet_message">Please check your connection and try again.</string>
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="retry">Retry</string>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:statusBarColor">@color/colorPrimary</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+    </style>
+    <style name="SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:statusBarColor">@color/colorBackground</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+</resources>

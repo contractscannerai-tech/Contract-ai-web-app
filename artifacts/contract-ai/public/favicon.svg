@@ -1,3 +1,10 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#7C3AED"/>
+  <rect width="180" height="180" rx="36" fill="#7C3AED"/>
+  <rect x="52" y="38" width="76" height="104" rx="8" fill="white"/>
+  <path d="M104 38 L128 62 L104 62 Z" fill="#EDE9FE"/>
+  <path d="M104 38 L104 62 L128 62" fill="none" stroke="#C4B5FD" stroke-width="2"/>
+  <rect x="64" y="76" width="52" height="6" rx="3" fill="#7C3AED" opacity="0.22"/>
+  <rect x="64" y="90" width="44" height="6" rx="3" fill="#7C3AED" opacity="0.22"/>
+  <rect x="64" y="104" width="50" height="6" rx="3" fill="#7C3AED" opacity="0.22"/>
+  <rect x="64" y="118" width="38" height="6" rx="3" fill="#7C3AED" opacity="0.22"/>
 </svg>

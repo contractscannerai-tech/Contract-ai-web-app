@@ -1,0 +1,33 @@
+R_DEF: Internal format may change without notice
+local
+color colorAccent
+color colorBackground
+color colorOnSurface
+color colorPrimary
+color colorPrimaryDark
+color colorSurface
+color colorText
+color colorTextSecondary
+drawable brand_icon_256
+drawable brand_logo_512
+drawable brand_splash_hd
+drawable brand_splash_md
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable splash_bg
+drawable splash_icon
+id lottie_splash
+id tv_app_name
+layout activity_splash
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string biometric_prompt_cancel
+string biometric_prompt_subtitle
+string biometric_prompt_title
+string no_internet_message
+string no_internet_title
+string retry
+style AppTheme
+style SplashTheme
+xml filepaths
