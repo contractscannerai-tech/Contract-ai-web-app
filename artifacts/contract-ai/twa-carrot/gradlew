@@ -1,0 +1,4 @@
+#!/bin/bash
+export ANDROID_HOME=/home/runner/android-sdk
+export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+exec "/home/runner/.gradle-bin/gradle-8.11.1/bin/gradle" "$@"
