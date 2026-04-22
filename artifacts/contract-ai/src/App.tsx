@@ -55,10 +55,12 @@ function AuthRedirector() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    // On mount: recover any persisted session from localStorage and redirect
-    // away from the login page if the user is already authenticated.
+    // On mount: recover any persisted session from localStorage.
+    // If the user is on the landing page ("/") or the login page ("/auth"),
+    // send them straight to the dashboard — they never need to log in again.
+    const unauthenticatedRoutes = ["/", "/auth"];
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && location === "/auth") {
+      if (session && unauthenticatedRoutes.includes(location)) {
         setLocation("/dashboard", { replace: true });
       }
     });
@@ -68,7 +70,7 @@ function AuthRedirector() {
       if (
         (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
         session &&
-        location === "/auth"
+        unauthenticatedRoutes.includes(location)
       ) {
         setLocation("/dashboard", { replace: true });
       }
