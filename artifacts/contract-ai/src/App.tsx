@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -51,13 +51,36 @@ function normalizeWouterBase(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
-// Handles OAuth redirects only — session recovery on load is handled in AppGate
-// before the router mounts, so there is never a flash of the wrong page.
+// Push the current Supabase access token into the server-side sb-session cookie.
+// The backend validates it with Supabase Admin and issues a fresh 1-year cookie.
+// This keeps the server cookie alive even after Supabase silently refreshes the
+// client-side JWT (which it does every ~55 minutes with autoRefreshToken: true).
+async function syncServerCookie(accessToken: string): Promise<void> {
+  try {
+    const base = (import.meta.env.BASE_URL as string).replace(/\/$/, "");
+    await fetch(`${base}/api/auth/oauth-session`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+  } catch {
+    // Network failure — fail open so the app still loads
+  }
+}
+
+// Handles OAuth redirects AND keeps the server cookie in sync after every
+// silent token refresh by Supabase. Without this, the sb-session cookie
+// drifts to an expired JWT after ~1 hour and every API call returns 401.
 function AuthRedirector() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        // Keep server cookie current on every auth state change that has a token
+        void syncServerCookie(session.access_token);
+      }
       if (event === "SIGNED_IN" && session) {
         setLocation("/dashboard", { replace: true });
       }
@@ -101,24 +124,52 @@ function AppGate() {
     return sessionStorage.getItem("contractai_splash_done") === "1";
   });
 
-  // Check the session while the splash is still showing so we know exactly
-  // where to land *before* the router ever mounts. This prevents any flash of
-  // the landing page for users who are already logged in.
+  // sessionChecked gates the router from mounting until we know whether the
+  // user has an active session AND have refreshed the server cookie. This
+  // prevents the landing-page flash AND prevents TermsGate from seeing a 401.
   const [sessionChecked, setSessionChecked] = useState(false);
+  const resolvedRef = useRef(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // Rewrite the browser URL to /dashboard before Wouter reads it.
-        // The router will start at /dashboard directly — zero flash.
-        const base = normalizeWouterBase(import.meta.env.BASE_URL);
-        const target = (base || "") + "/dashboard";
-        if (!window.location.pathname.includes("/dashboard")) {
-          window.history.replaceState({}, "", target);
+    const base = normalizeWouterBase(import.meta.env.BASE_URL);
+
+    async function resolveSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (resolvedRef.current) return;
+        resolvedRef.current = true;
+
+        if (session) {
+          // 1. Refresh the server-side sb-session cookie BEFORE the router
+          //    mounts, so TermsGate's first API call lands on a valid cookie.
+          await syncServerCookie(session.access_token);
+
+          // 2. Rewrite the URL to /dashboard so Wouter starts there directly
+          //    — zero flash of the landing page.
+          const target = (base || "") + "/dashboard";
+          if (!window.location.pathname.includes("/dashboard")) {
+            window.history.replaceState({}, "", target);
+          }
         }
+      } catch {
+        if (!resolvedRef.current) resolvedRef.current = true;
+      } finally {
+        setSessionChecked(true);
       }
-      setSessionChecked(true);
-    });
+    }
+
+    void resolveSession();
+
+    // Safety net: never block the app for more than 5 seconds.
+    const timeout = setTimeout(() => {
+      if (!resolvedRef.current) {
+        resolvedRef.current = true;
+        setSessionChecked(true);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const handleSplashComplete = useCallback(() => {
@@ -126,16 +177,16 @@ function AppGate() {
     setSplashDone(true);
   }, []);
 
-  // Keep the splash visible until BOTH the animation AND the session check
-  // are done. This way the router always mounts at the correct URL.
+  // Router only mounts when BOTH the animation is done AND the session/cookie
+  // sync is complete — guaranteeing the right starting page with no glitches.
   const isReady = splashDone && sessionChecked;
 
   return (
     <NetworkGuardProvider>
       <NetworkBanner />
-      {/* Splash covers everything while animation plays and session resolves */}
+      {/* Splash covers everything while the animation plays */}
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {/* Brief blank during session check if splash was already skipped */}
+      {/* Invisible placeholder while session resolves (imperceptibly brief) */}
       {splashDone && !sessionChecked && <div className="min-h-screen bg-background" />}
       {isReady && (
         <WouterRouter base={normalizeWouterBase(import.meta.env.BASE_URL)}>
