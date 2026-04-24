@@ -11,6 +11,7 @@ import { TermsGate } from "@/components/terms-gate";
 import { IntegrityGuard } from "@/components/integrity-guard";
 import { NetworkBanner } from "@/components/network-banner";
 import { NetworkGuardProvider } from "@/components/network-guard";
+import { Loader2 } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
@@ -43,18 +44,12 @@ function Gated({ children }: { children: React.ReactNode }) {
   return <TermsGate>{children}</TermsGate>;
 }
 
-// Wouter expects an absolute-looking base ("" or "/foo"). Vite's BASE_URL can
-// be "/", "./", or a path like "/myapp/" depending on the build mode. Normalize
-// all of those to a value wouter accepts without mangling routes.
 function normalizeWouterBase(baseUrl: string): string {
   if (!baseUrl || baseUrl === "/" || baseUrl === "./" || baseUrl === ".") return "";
   return baseUrl.replace(/\/$/, "");
 }
 
 // Push the current Supabase access token into the server-side sb-session cookie.
-// The backend validates it with Supabase Admin and issues a fresh 1-year cookie.
-// This keeps the server cookie alive even after Supabase silently refreshes the
-// client-side JWT (which it does every ~55 minutes with autoRefreshToken: true).
 async function syncServerCookie(accessToken: string): Promise<void> {
   try {
     const base = (import.meta.env.BASE_URL as string).replace(/\/$/, "");
@@ -65,20 +60,18 @@ async function syncServerCookie(accessToken: string): Promise<void> {
       body: JSON.stringify({ access_token: accessToken }),
     });
   } catch {
-    // Network failure — fail open so the app still loads
+    // Network failure — fail open
   }
 }
 
 // Handles OAuth redirects AND keeps the server cookie in sync after every
-// silent token refresh by Supabase. Without this, the sb-session cookie
-// drifts to an expired JWT after ~1 hour and every API call returns 401.
+// silent token refresh by Supabase.
 function AuthRedirector() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        // Keep server cookie current on every auth state change that has a token
         void syncServerCookie(session.access_token);
       }
       if (event === "SIGNED_IN" && session) {
@@ -125,14 +118,16 @@ function AppGate() {
   });
 
   // sessionChecked gates the router from mounting until we know whether the
-  // user has an active session AND have refreshed the server cookie. This
-  // prevents the landing-page flash AND prevents TermsGate from seeing a 401.
+  // user has an active session AND have refreshed the server cookie.
   const [sessionChecked, setSessionChecked] = useState(false);
+
+  // Shown while we reconnect and sync the session cookie after going offline.
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
   const resolvedRef = useRef(false);
+  const hadSessionRef = useRef(false);
 
   useEffect(() => {
-    const base = normalizeWouterBase(import.meta.env.BASE_URL);
-
     async function resolveSession() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -141,16 +136,19 @@ function AppGate() {
         resolvedRef.current = true;
 
         if (session) {
-          // 1. Refresh the server-side sb-session cookie BEFORE the router
-          //    mounts, so TermsGate's first API call lands on a valid cookie.
-          await syncServerCookie(session.access_token);
+          hadSessionRef.current = true;
 
-          // 2. Rewrite the URL to /dashboard so Wouter starts there directly
-          //    — zero flash of the landing page.
-          const target = (base || "") + "/dashboard";
-          if (!window.location.pathname.includes("/dashboard")) {
-            window.history.replaceState({}, "", target);
+          if (navigator.onLine) {
+            // Online: sync the server cookie FIRST, then redirect to dashboard.
+            await syncServerCookie(session.access_token);
+            const base = normalizeWouterBase(import.meta.env.BASE_URL);
+            const target = (base || "") + "/dashboard";
+            if (!window.location.pathname.includes("/dashboard")) {
+              window.history.replaceState({}, "", target);
+            }
           }
+          // Offline with a session: stay on landing page.
+          // The reconnect watcher below will handle the redirect when internet returns.
         }
       } catch {
         if (!resolvedRef.current) resolvedRef.current = true;
@@ -172,28 +170,60 @@ function AppGate() {
     return () => clearTimeout(timeout);
   }, []);
 
+  // When internet returns AND the user had an active session, sync the cookie
+  // and navigate them straight to dashboard.
+  useEffect(() => {
+    async function handleReconnect() {
+      if (!hadSessionRef.current) return;
+      setIsReconnecting(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await syncServerCookie(session.access_token);
+          const base = normalizeWouterBase(import.meta.env.BASE_URL);
+          window.location.href = (base || "") + "/dashboard";
+          return;
+        }
+      } catch { /* ignore */ }
+      setIsReconnecting(false);
+    }
+
+    window.addEventListener("online", handleReconnect);
+    return () => window.removeEventListener("online", handleReconnect);
+  }, []);
+
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("contractai_splash_done", "1");
     setSplashDone(true);
   }, []);
 
-  // Router only mounts when BOTH the animation is done AND the session/cookie
-  // sync is complete — guaranteeing the right starting page with no glitches.
   const isReady = splashDone && sessionChecked;
 
   return (
     <NetworkGuardProvider>
       <NetworkBanner />
+
       {/* Splash covers everything while the animation plays */}
       {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-      {/* Invisible placeholder while session resolves (imperceptibly brief) */}
+
+      {/* Blank hold while session resolves after splash */}
       {splashDone && !sessionChecked && <div className="min-h-screen bg-background" />}
+
       {isReady && (
         <WouterRouter base={normalizeWouterBase(import.meta.env.BASE_URL)}>
           <AuthRedirector />
           <Router />
         </WouterRouter>
       )}
+
+      {/* Reconnect overlay — shown briefly while syncing session after going offline */}
+      {isReconnecting && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+          <p className="text-sm font-medium text-foreground">Connecting you to your contracts…</p>
+        </div>
+      )}
+
       <Toaster />
       <IntegrityGuard />
     </NetworkGuardProvider>

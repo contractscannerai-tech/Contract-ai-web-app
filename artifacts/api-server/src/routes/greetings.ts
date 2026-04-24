@@ -12,21 +12,34 @@ function getGroq() {
   return new Groq({ apiKey });
 }
 
-const GREETING_PROMPTS = [
-  "morning warmth",
-  "gentle encouragement",
-  "calm confidence",
-  "soft delight",
-  "friendly energy",
-  "quiet motivation",
-  "serene optimism",
+const TONES = [
+  "dry legal wit — as if a barrister wrote it between hearings",
+  "courtroom swagger — confident, a little theatrical",
+  "the pure joy of catching a loophole no one else noticed",
+  "detective-level contract scrutiny — sharp, perceptive, satisfied",
+  "the quiet satisfaction of clause-by-clause victory",
+  "a paralegal who moonlights as a stand-up comedian",
+  "contract nerd energy — endearingly obsessive about the details",
+  "the calm of someone who has read every fine-print trap in existence",
+];
+
+const FALLBACKS = [
+  "The fine print has been waiting. Honestly, it's a little nervous.",
+  "Another day, another clause that won't get past you.",
+  "Consider this your retainer. Let's get to work.",
+  "Objection overruled — you're in.",
+  "The opposing counsel never saw you coming. Neither did your contracts.",
+  "Your contracts missed you. They were getting restless without proper scrutiny.",
+  "Back again? Good. These clauses won't cross-examine themselves.",
+  "Every signature tells a story. Ready to read yours?",
+  "The ink is dry, but the analysis is just getting started.",
+  "You signed up to understand what you sign. Smart move. Let's go.",
 ];
 
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const name = (req.query["name"] as string | undefined)?.trim() || "";
-    const tone = GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)];
-    const nameClause = name ? `, ${name}` : "";
+    const tone = TONES[Math.floor(Math.random() * TONES.length)];
 
     const groq = getGroq();
     const completion = await groq.chat.completions.create({
@@ -35,37 +48,30 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response): P
         {
           role: "system",
           content:
-            "You are a warm, thoughtful AI that writes brief, heartfelt welcome-back messages for a legal contract analysis app called ContractAI. " +
-            "Each message must be unique, soft, and genuinely uplifting — never generic or corporate. " +
-            "Write exactly 1–2 sentences. No quotation marks. No emojis. No hashtags. Just the message itself.",
+            "You write short, witty welcome-back messages for a legal contract analysis app called ContractAI. " +
+            "Messages are cheeky but warm, always contract-themed, and make the user smile or quietly chuckle. " +
+            "Think legal puns, courtroom wit, or the dry satisfaction of someone who catches every fine-print trap. " +
+            "Write exactly 1–2 sentences. No quotation marks. No emojis. No hashtags. No corporate-speak. " +
+            "Make it feel personal and a little unexpected — like a message they'd want to screenshot.",
         },
         {
           role: "user",
           content:
-            `Write a welcome-back greeting for someone named \"${name || "a user"}\" who has just opened ContractAI. ` +
-            `The tone should feel like ${tone}. ` +
-            `Address them as \"${nameClause ? name : "you"}\" naturally within the sentence. ` +
-            "Make it feel personal, warm, and different from anything you've written before. " +
-            "Do not start with 'Welcome back' — surprise them with something fresh.",
+            `Write a welcome-back message${name ? ` for ${name}` : ""}. ` +
+            `Tone: ${tone}. ` +
+            `${name ? `Address them naturally as "${name}" somewhere in the message. ` : ""}` +
+            "Do not start with 'Welcome back'. Surprise them with something fresh and clever. " +
+            "Keep it contract-related — clauses, fine print, signatures, legal analysis, etc.",
         },
       ],
       max_tokens: 80,
-      temperature: 1.1,
+      temperature: 1.15,
     });
 
-    const message = completion.choices[0]?.message?.content?.trim() ?? "Great to have you back — let's make today's contracts work for you.";
+    const message = completion.choices[0]?.message?.content?.trim() ?? FALLBACKS[0]!;
     res.json({ message });
-  } catch (err) {
-    const fallbacks = [
-      "Every contract tells a story — glad you're here to decode yours.",
-      "Your legal clarity journey continues right where you left off.",
-      "The smartest legal move you'll make today starts right here.",
-      "Back again — your contracts are ready and waiting for you.",
-      "Good to see you. Let's turn complex legalese into clear decisions.",
-      "Your instinct to understand what you sign is your greatest asset.",
-      "Precision, clarity, protection — everything you need is right here.",
-    ];
-    const message = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  } catch {
+    const message = FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)]!;
     res.json({ message });
   }
 });

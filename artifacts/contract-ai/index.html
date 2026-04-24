@@ -19,17 +19,91 @@
         visibility: hidden !important;
         pointer-events: none !important;
       }
+
+      /* CSS-only pre-splash shown the instant HTML arrives — zero JS needed.
+         React's SplashScreen fades this out on first mount and takes over.   */
+      #pre-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        transition: opacity 0.25s ease;
+      }
+      @media (prefers-color-scheme: dark) {
+        #pre-splash { background: #09090b; }
+        #pre-splash h1  { color: #fafafa; }
+        #pre-splash .ps-bar { background: #7c3aed; }
+      }
+      #pre-splash.ps-fade {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #pre-splash .ps-icon {
+        width: 80px;
+        height: 80px;
+        background: #6200ee;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        animation: ps-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        box-shadow: 0 8px 32px rgba(98,0,238,0.28);
+      }
+      #pre-splash .ps-icon svg {
+        width: 40px;
+        height: 40px;
+        stroke: #ffffff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #pre-splash h1 {
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 2.25rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #09090b;
+        margin: 0 0 10px 0;
+      }
+      #pre-splash .ps-bar {
+        width: 64px;
+        height: 4px;
+        background: #6200ee;
+        border-radius: 9999px;
+      }
+      @keyframes ps-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.82; transform: scale(0.96); }
+      }
     </style>
   </head>
   <body>
+    <div id="pre-splash">
+      <div class="ps-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <h1>ContractAI</h1>
+      <div class="ps-bar"></div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/sw.js").catch(function () {
-            /* swallow — SW is best-effort */
-          });
+          navigator.serviceWorker.register("/sw.js").catch(function () {});
         });
       }
     </script>

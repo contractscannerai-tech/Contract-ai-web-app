@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   LogOut, Crown, User, FileText, Trash2, Shield,
   AlertTriangle, Loader2, ExternalLink, Sun, Moon,
-  Gift, Copy, Check,
+  Gift, Copy, Check, Pencil,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,8 @@ import AppLayout from "@/components/layout";
 import { useTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { BiometricSetup } from "@/components/biometric-setup";
+
+const BASE = (import.meta.env.BASE_URL as string).replace(/\/$/, "");
 
 const planBadge: Record<string, { label: string; className: string }> = {
   free:    { label: "Starter",       className: "bg-muted text-muted-foreground border-muted" },
@@ -31,6 +33,11 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
 
+  const userExt = user as (typeof user & { displayName?: string | null }) | undefined;
+
+  const [displayName, setDisplayName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -45,11 +52,42 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch("/api/referrals/code", { credentials: "include" })
+    if (userExt?.displayName) setDisplayName(userExt.displayName);
+  }, [userExt?.displayName]);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/referrals/code`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setReferralData(data as typeof referralData))
       .catch(() => {});
   }, []);
+
+  async function handleSaveName() {
+    if (savingName) return;
+    setSavingName(true);
+    try {
+      const res = await fetch(`${BASE}/api/auth/me/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayName: displayName.trim() || null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? "Failed to save name");
+      }
+      queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      toast({ title: "Name updated", description: "Your display name has been saved." });
+    } catch (err) {
+      toast({
+        title: "Could not save name",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function handleLogout() {
     await logout.mutateAsync({});
@@ -61,7 +99,7 @@ export default function SettingsPage() {
     if (deleteConfirmText.toLowerCase() !== "delete") return;
     setDeletingAccount(true);
     try {
-      const res = await fetch("/api/auth/me", { method: "DELETE", credentials: "include" });
+      const res = await fetch(`${BASE}/api/auth/me`, { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(body.message ?? `Server error ${res.status}`);
@@ -82,7 +120,7 @@ export default function SettingsPage() {
     if (!referralInput.trim()) return;
     setClaimingReferral(true);
     try {
-      const res = await fetch("/api/referrals/claim", {
+      const res = await fetch(`${BASE}/api/referrals/claim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -113,12 +151,53 @@ export default function SettingsPage() {
   }
 
   const badge = planBadge[user?.plan ?? "free"];
+  const namePlaceholder = userExt?.displayName || user?.email?.split("@")[0] || "Your name";
 
   return (
     <AppLayout user={user} onLogout={handleLogout}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="text-2xl font-bold tracking-tight mb-8">Settings</h1>
 
+        {/* ── Profile ── */}
+        <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Pencil className="w-3.5 h-3.5" /> Profile
+          </h2>
+          {isLoading ? (
+            <Skeleton className="h-16" />
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Display name</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Shown in your welcome greetings. Leave blank to use your email name.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder={namePlaceholder}
+                    maxLength={60}
+                    className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
+                    data-testid="input-display-name"
+                    onKeyDown={(e) => { if (e.key === "Enter") void handleSaveName(); }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => void handleSaveName()}
+                    disabled={savingName}
+                    data-testid="button-save-name"
+                  >
+                    {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Account ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
           {isLoading ? (
@@ -141,6 +220,7 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
+        {/* ── Plan ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Plan</h2>
           {isLoading ? (
@@ -185,6 +265,7 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
+        {/* ── Appearance ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Appearance</h2>
           <div className="flex gap-3">
@@ -207,6 +288,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* ── Referral ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <Gift className="w-4 h-4" /> Referral Program
@@ -261,6 +343,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* ── Quick Actions ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Quick Actions</h2>
           <div className="flex flex-col gap-2">
@@ -277,6 +360,7 @@ export default function SettingsPage() {
           <BiometricSetup />
         </div>
 
+        {/* ── Privacy ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Privacy & Data</h2>
           <div className="space-y-3 text-sm text-muted-foreground">
@@ -308,6 +392,7 @@ export default function SettingsPage() {
           </a>
         </div>
 
+        {/* ── Session ── */}
         <div className="bg-card border border-card-border rounded-xl p-6 shadow-sm mb-6">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">Session</h2>
           <Button
@@ -322,6 +407,7 @@ export default function SettingsPage() {
           </Button>
         </div>
 
+        {/* ── Danger Zone ── */}
         <div className="bg-card border border-destructive/20 rounded-xl p-6 shadow-sm">
           <h2 className="font-semibold text-sm text-destructive uppercase tracking-wider mb-1">Danger Zone</h2>
           <p className="text-xs text-muted-foreground mb-4">

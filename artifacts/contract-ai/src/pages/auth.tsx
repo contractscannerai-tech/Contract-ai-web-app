@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { BiometricLoginButton } from "@/components/biometric-login-button";
+import { useNetworkGuard } from "@/components/network-guard";
 
 function GoogleIcon() {
   return (
@@ -26,6 +27,7 @@ export default function AuthPage() {
   const search = useSearch();
   const { toast } = useToast();
   const { t } = useI18n();
+  const { isOnline, showOfflineModal } = useNetworkGuard();
 
   const params = new URLSearchParams(search);
   const isSignupFlow = params.get("signup") === "1";
@@ -42,6 +44,16 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // If the user lands on /auth while offline, send them back to the landing
+  // page and show the offline popup — we never want raw auth UI showing
+  // with no way to actually log in.
+  useEffect(() => {
+    if (!isOnline) {
+      showOfflineModal("sign in");
+      setLocation("/", { replace: true });
+    }
+  }, [isOnline, showOfflineModal, setLocation]);
 
   useEffect(() => {
     if (isSignupFlow && !termsValid) {

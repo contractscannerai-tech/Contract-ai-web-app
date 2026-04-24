@@ -7,11 +7,17 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ReviewBubbles } from "@/components/review-bubbles";
+import { useNetworkGuard } from "@/components/network-guard";
 
 const PRIVACY_URL = "https://contractscannerai-tech.github.io/Contractai-privacy-policy/";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
+  const { requireOnline } = useNetworkGuard();
+
+  function goToAuth() {
+    if (requireOnline("sign in")) setLocation("/auth");
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -28,10 +34,10 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" onClick={() => setLocation("/pricing")} data-testid="link-pricing">
               Pricing
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/auth")} data-testid="link-login">
+            <Button variant="ghost" size="sm" onClick={goToAuth} data-testid="link-login">
               Login
             </Button>
-            <Button size="sm" onClick={() => setLocation("/auth")} data-testid="button-get-started">
+            <Button size="sm" onClick={goToAuth} data-testid="button-get-started">
               Get started
             </Button>
           </div>
@@ -50,7 +56,7 @@ export default function LandingPage() {
           Your contract analyzer in your pocket — without paying expensive lawyers. Upload a PDF and get an instant plain-English summary, risk analysis, and key clause extraction.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 mb-12">
-          <Button size="lg" onClick={() => setLocation("/auth")} className="gap-2 px-8" data-testid="button-hero-cta">
+          <Button size="lg" onClick={goToAuth} className="gap-2 px-8" data-testid="button-hero-cta">
             Analyze your first contract free
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -116,25 +122,21 @@ export default function LandingPage() {
                 icon: <PenLine className="w-5 h-5" />,
                 title: "Document Drafting",
                 desc: "AI assists you in drafting professional legal documents — NDAs, employment contracts, service agreements, and more.",
-                route: "/ai/draft",
               },
               {
                 icon: <User className="w-5 h-5" />,
                 title: "Resume Builder",
                 desc: "AI assists you in building a polished, ATS-optimized resume tailored to your target role and industry.",
-                route: "/ai/resume",
               },
               {
                 icon: <TrendingUp className="w-5 h-5" />,
                 title: "Career Insights",
                 desc: "AI assists you with personalised career path recommendations, skill guidance, and a 90-day action plan.",
-                route: "/ai/career",
               },
               {
                 icon: <LayoutTemplate className="w-5 h-5" />,
                 title: "Document Templates",
                 desc: "Access a library of professional document templates. AI assists you in customising any template instantly.",
-                route: "/ai/templates",
               },
             ].map((tool, i) => (
               <div
@@ -148,7 +150,7 @@ export default function LandingPage() {
                 <h3 className="font-semibold text-sm mb-1.5">{tool.title}</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mb-3">{tool.desc}</p>
                 <button
-                  onClick={() => setLocation("/auth")}
+                  onClick={goToAuth}
                   className="text-xs text-primary font-medium hover:underline underline-offset-2 flex items-center gap-1"
                 >
                   Get started <ArrowRight className="w-3 h-3" />
@@ -228,7 +230,7 @@ export default function LandingPage() {
       </section>
 
       <section className="py-16 border-t border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-muted-foreground">
             {[
               { icon: <Shield className="w-5 h-5" />, label: "Bank-grade encryption" },
@@ -248,7 +250,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl font-bold tracking-tight mb-4">Ready to stop guessing?</h2>
           <p className="text-primary-foreground/80 mb-8 text-lg">Start analyzing contracts today. It's free to get started.</p>
-          <Button size="lg" variant="secondary" onClick={() => setLocation("/auth")} className="gap-2" data-testid="button-cta-bottom">
+          <Button size="lg" variant="secondary" onClick={goToAuth} className="gap-2" data-testid="button-cta-bottom">
             Start for free <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
@@ -265,7 +267,7 @@ export default function LandingPage() {
           <p className="text-xs text-muted-foreground">© 2026 ContractAI. All rights reserved.</p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <button onClick={() => setLocation("/pricing")} className="hover:text-foreground transition-colors">Pricing</button>
-            <button onClick={() => setLocation("/auth")} className="hover:text-foreground transition-colors">Login</button>
+            <button onClick={goToAuth} className="hover:text-foreground transition-colors">Login</button>
             <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Privacy Policy</a>
           </div>
         </div>

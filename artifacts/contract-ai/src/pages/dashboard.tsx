@@ -64,7 +64,7 @@ export default function DashboardPage() {
   return (
     <AppLayout user={user} onLogout={handleLogout}>
       <ReviewPromptModal trigger={user?.contractsUsed ?? 0} />
-      <WelcomeBackDialog userName={user?.email?.split("@")[0]} />
+      <WelcomeBackDialog userName={(user as (typeof user & { displayName?: string | null }) | undefined)?.displayName || user?.email?.split("@")[0]} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         <div className="flex items-center justify-between">
