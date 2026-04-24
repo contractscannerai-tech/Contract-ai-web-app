@@ -32,11 +32,8 @@ export default function AuthPage() {
   const params = new URLSearchParams(search);
   const isSignupFlow = params.get("signup") === "1";
 
-  const termsTimestamp = sessionStorage.getItem("contractai_terms_ts");
-  const termsValid = termsTimestamp ? Date.now() - parseInt(termsTimestamp) < 30 * 60 * 1000 : false;
-
   const [mode, setMode] = useState<"login" | "signup">(
-    isSignupFlow && termsValid ? "signup" : "login"
+    isSignupFlow ? "signup" : "login"
   );
 
   const [email, setEmail] = useState("");
@@ -55,14 +52,8 @@ export default function AuthPage() {
     }
   }, [isOnline, showOfflineModal, setLocation]);
 
-  useEffect(() => {
-    if (isSignupFlow && !termsValid) {
-      setLocation("/terms");
-    }
-  }, [isSignupFlow, termsValid, setLocation]);
-
   function handleCreateAccount() {
-    setLocation("/terms");
+    setMode("signup");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,7 +78,6 @@ export default function AuthPage() {
       } else {
         const result = await signup(email, password, true);
         if (result.success) {
-          sessionStorage.removeItem("contractai_terms_ts");
           toast({ title: "Account created!", description: "Welcome to ContractAI. Redirecting to your dashboard..." });
           setTimeout(() => setLocation("/dashboard", { replace: true }), 800);
         } else {
@@ -281,9 +271,6 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-700 border border-green-500/20 rounded-full px-3 py-1 text-xs font-medium mb-4">
-              {t("auth.termsAccepted")}
-            </div>
             <h1 className="text-2xl font-bold tracking-tight mb-2">{t("auth.createAccount")}</h1>
             <p className="text-sm text-muted-foreground">{t("auth.chooseMethod")}</p>
           </div>
@@ -352,10 +339,22 @@ export default function AuthPage() {
             </form>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-xs text-muted-foreground mt-4 leading-relaxed">
+            By creating an account you agree to our{" "}
+            <button onClick={() => setLocation("/terms")} className="underline hover:text-foreground transition-colors">
+              Terms of Service
+            </button>
+            {" "}and{" "}
+            <button onClick={() => setLocation("/privacy")} className="underline hover:text-foreground transition-colors">
+              Privacy Policy
+            </button>
+            .
+          </p>
+
+          <p className="text-center text-sm text-muted-foreground mt-4">
             {t("auth.alreadyHave")}{" "}
             <button
-              onClick={() => setLocation("/auth")}
+              onClick={() => setMode("login")}
               className="text-primary font-medium hover:underline"
               data-testid="button-switch-mode"
             >
