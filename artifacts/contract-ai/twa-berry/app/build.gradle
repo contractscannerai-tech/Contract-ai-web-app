@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.contractaiscan.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.contractaiscan.app"
+        minSdk 23
+        targetSdk 36
+        versionCode 4
+        versionName "2.1.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('android.keystore')
+            storePassword 'contractai2024'
+            keyAlias 'contractai'
+            keyPassword 'contractai2024'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    aaptOptions {
+        noCompress 'bin'
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
+    implementation 'com.airbnb.android:lottie:6.1.0'
+    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'androidx.webkit:webkit:1.8.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'androidx.work:work-runtime:2.9.0'
+    implementation 'androidx.security:security-crypto:1.0.0'
+}

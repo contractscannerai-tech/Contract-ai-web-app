@@ -1,0 +1,12 @@
+R_DEF: Internal format may change without notice
+local
+color colorAccent
+color colorPrimary
+color colorPrimaryDark
+drawable splash_icon
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string twa_url
+style Theme.ContractAI
+xml file_paths
