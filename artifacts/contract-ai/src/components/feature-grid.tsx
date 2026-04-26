@@ -250,7 +250,7 @@ const POWER_FEATURES: FeatureDef[] = [
     label: "Compare Contracts",
     description: "Side-by-side comparison of two docs",
     icon: <GitCompareIcon />,
-    requiredPlan: "pro",
+    requiredPlan: "premium",
     action: (nav) => nav("/contracts"),
   },
   {
@@ -258,7 +258,7 @@ const POWER_FEATURES: FeatureDef[] = [
     label: "Renegotiation Tips",
     description: "AI-suggested rewrites for risky clauses",
     icon: <HandshakeIcon />,
-    requiredPlan: "pro",
+    requiredPlan: "premium",
     action: (nav) => nav("/contracts"),
   },
   {
